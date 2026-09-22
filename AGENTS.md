@@ -15,6 +15,7 @@ Read these files before making architectural changes:
 - Backend business logic belonds in services, not controllers
 - Add or update tests for new backend behavior
 - Run relevant tests before considering a task complete
+- For consequential choices, stop at decision points to have a discussion with me
 
 ## Before implementing
 
