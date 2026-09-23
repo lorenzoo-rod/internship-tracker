@@ -1,0 +1,38 @@
+{
+  "name": "internship-hub-frontend",
+  "productName": "Internship Hub",
+  "description": "A local desktop board for internship opportunities and applications",
+  "author": "Internship Hub",
+  "private": true,
+  "version": "0.1.2",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "test:desktop": "node --test electron/*.test.cjs",
+    "preview": "vite preview",
+    "desktop": "npm run build && electron .",
+    "make": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-package.ps1"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.2",
+    "@electron-forge/maker-squirrel": "^7.11.2",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "electron": "44.3.0",
+    "jsdom": "30.1.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.0",
+    "vitest": "5.0.1"
+  }
+}

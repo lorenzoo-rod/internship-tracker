@@ -1,21 +1,52 @@
 # Internship Hub
 
-## Goal 
+## Goal
 
-Create a desktop internship-management application that allows a user to discover, save, track, and manage internship applications
+Help one user keep track of internship opportunities and applications on their own computer. Each saved opportunity is one card on a Kanban board.
 
-## Core user workflows
+The longer-term goal is to support more of the internship application process, from finding an opportunity and preparing application materials through tracking the outcome.
 
-1. Save an internship posting
-2. Mark an internship as applied
-3. Track its application status
-4. Avoid applying to the same internship twice
-5. Search/filter previous applications
+## MVP workflow
 
-## Future workflows
+1. Manually save an internship opportunity, including its posting URL.
+2. View saved opportunities as cards in fixed application stages.
+3. Move a card between stages as the application progresses.
+4. See the existing card when a posting URL matches one already saved; the duplicate is not added.
 
-- Automatically discover internship postings
-- Recommend relevant internships
-- Global keyboard shortcut overlay
-- Brower integration
-- Email-based application status detection
+The first usable version runs locally with a separately configured Spring Boot service and PostgreSQL database. It does not require an installer.
+
+## Current tracker workflow
+
+- Edit a card's title, company, and posting URL through a prefilled form. The stage remains editable through the board's existing control. A URL already used by another card is rejected with the existing-card warning.
+- Gray pencil and trash controls sit at the top right of each card, with accessible labels. Deleting a card removes it permanently after a confirmation that names the card.
+- "Don't ask again on this device" in the deletion confirmation persists across launches. A board control turns confirmations back on. A broader settings window can be designed later.
+
+## Next tracker improvement
+
+- Add a button to save a database backup to a user-chosen location, with clear success and failure feedback. Restoring a backup remains a separate workflow.
+
+## Later workflows
+
+- Search and filter saved opportunities.
+- Use a global keyboard shortcut and quick-add overlay.
+- Save postings through browser integration.
+- Browse internship postings from the app and choose an "Add to list" action that fills in available details such as title, company, and posting URL for review before saving. The source of postings and how details are extracted need later planning.
+- Discover internship postings automatically.
+- Recommend relevant internships.
+- Detect application updates from email.
+- Show an approximate timeline of when well-known companies typically open internship applications, with sources and dates checked before the user relies on them.
+- Let users record scheduled interview dates and times for cards in `INTERVIEWING`, with a later decision on reminders and calendar integration.
+- Explore a hosted version or synchronization so a user can open the same dashboard across devices. Account access, synchronization, offline behavior, and handling of personal data need a separate design before this is built.
+- Explore a Trash or Recently Deleted area, potentially with automatic expiration, after the initial permanent-delete workflow is in use.
+
+## Potential future area: application materials
+
+Explore a dedicated section, with a name to be decided, for the material used across applications:
+
+- Save one or more resumes in the app for reuse when an application asks for an upload.
+- Keep a structured inventory of experiences, projects, courses, and other resume-worthy work, with descriptions of what the user did.
+- Help turn that inventory into resume bullet points and tailor selected experiences or a resume to an opportunity.
+- Explore ChatGPT-assisted suggestions and a resume workshop where the user can review and revise proposed changes.
+- Explore ways to make a saved resume available during an application form, potentially through later browser integration.
+
+This is a future concept, not part of the tracker MVP. The section name, workflow, storage and versioning of documents, form integration, AI provider, and handling of personal information need separate planning before implementation.
