@@ -45,7 +45,7 @@ it('uses the Electron bridge when the desktop shell provides it', async () => {
     stage: 'SAVED',
   }
   const bridge = vi.fn(async () => ({ status: 200, body: [existing] }))
-  window.trackerApi = { request: bridge }
+  window.trackerApi = { request: bridge, backup: vi.fn(async () => ({ canceled: true })) }
   const browserFetch = vi.fn()
   vi.stubGlobal('fetch', browserFetch)
 
@@ -199,4 +199,23 @@ it('confirms deletion, remembers the choice, and lets the user restore confirmat
   await user.click(screen.getByRole('button', { name: 'Turn delete confirmations on' }))
   expect(window.localStorage.getItem('internshipHub.skipDeleteConfirmation')).toBeNull()
   expect(fetchMock).toHaveBeenCalledWith('/api/opportunities/2', expect.objectContaining({ method: 'DELETE' }))
+})
+
+it('saves a backup through the desktop bridge and reports success or failure', async () => {
+  const user = userEvent.setup()
+  const backup = vi.fn()
+    .mockResolvedValueOnce({ canceled: false, path: 'C:\\Users\\test\\Documents\\backup.dump', bytes: 123 })
+    .mockResolvedValueOnce({ canceled: true })
+    .mockRejectedValueOnce(new Error('PostgreSQL backup tools were not found.'))
+  window.trackerApi = { request: vi.fn(async () => ({ status: 200, body: [] })), backup }
+
+  render(<App />)
+  const button = screen.getByRole('button', { name: 'Save backup' })
+  await user.click(button)
+  expect(await screen.findByText(/Backup saved to .*backup\.dump/)).not.toBeNull()
+  await user.click(button)
+  expect(screen.queryByText(/Backup saved to/)).toBeNull()
+  await user.click(button)
+  expect(await screen.findByText('PostgreSQL backup tools were not found.')).not.toBeNull()
+  expect(backup).toHaveBeenCalledTimes(3)
 })

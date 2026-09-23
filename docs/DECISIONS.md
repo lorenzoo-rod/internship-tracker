@@ -24,17 +24,17 @@ Cross-device access is a future design possibility, not part of the current-PC p
 
 ## Tracker improvements before the fresh-PC installer
 
-- Edit and delete are implemented in version 0.1.2. The backup button follows, then Milestone 6.
+- Edit and delete are implemented in version 0.1.2, and the desktop backup button in version 0.1.3. Milestone 6 follows.
 - Edit title, company, and posting URL in a prefilled form; stage changes remain in the existing board control. Editing a URL to one used by another card returns the existing-card duplicate warning.
 - Gray pencil and trash controls sit at the top right of each card. Delete is permanent in the current version and normally requires a confirmation naming the card.
 - The confirmation offers "Don't ask again on this device." Renderer local storage preserves that preference across app launches, and a visible board control re-enables confirmations. A full settings/configuration window is deferred for later design.
 - A future Trash or Recently Deleted area may allow recovery and automatic expiration; its retention period and behavior are undecided.
-- Next, add a user-initiated backup button. Backup destination and restore workflow details will be decided in that milestone.
+- The desktop backup button opens a save dialog and uses the current PC's PostgreSQL 17 `pg_dump` and `pg_restore` tools. It saves a custom archive to a user-chosen path, verifies the archive, and does not overwrite an existing file. Database credentials remain outside the archive command line. In-app restore and scheduled backup workflows remain undecided.
 
 ## Next implementation order
 
 - Persistent local PostgreSQL is in place so saved cards survive a full restart.
-- The desktop app now opens with one click on the current Windows PC, using its existing PostgreSQL service and data. The backup button comes next; a fresh-PC installer that also provisions PostgreSQL follows later.
+- The desktop app now opens with one click on the current Windows PC, using its existing PostgreSQL service and data. Editing, deletion, and user-initiated backup are in place. A fresh-PC installer that also provisions PostgreSQL follows later.
 
 ## Current-PC package plan
 

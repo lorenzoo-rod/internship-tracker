@@ -2,12 +2,18 @@ const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron')
 const path = require('node:path')
 const { startPackagedBackend } = require('./backend-launcher.cjs')
 const { forwardTrackerRequest } = require('./api-proxy.cjs')
+const { createBackup } = require('./backup.cjs')
 const squirrelStartup = require('electron-squirrel-startup')
 
 let mainWindow
 let backend
 let apiBase = 'http://127.0.0.1:8080'
 let quitting = false
+let backupInProgress = false
+
+function isAppWindow(event) {
+  return mainWindow && event.sender === mainWindow.webContents && event.senderFrame === mainWindow.webContents.mainFrame
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -42,13 +48,32 @@ function createWindow() {
 }
 
 ipcMain.handle('tracker:request', (event, request) => {
-  if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) {
+  if (!isAppWindow(event)) {
     throw new Error('Request did not come from the Internship Hub window')
   }
   if (app.isPackaged && (!backend || backend.child.exitCode !== null)) {
     throw new Error('The local API is not running.')
   }
   return forwardTrackerRequest(request, fetch, apiBase)
+})
+
+ipcMain.handle('tracker:backup', async (event) => {
+  if (!isAppWindow(event)) throw new Error('Backup request did not come from the Internship Hub window.')
+  if (backupInProgress) throw new Error('A backup is already running.')
+  backupInProgress = true
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save Internship Hub backup',
+      defaultPath: path.join(app.getPath('documents'), `internship-hub-${timestamp}.dump`),
+      buttonLabel: 'Save backup',
+      filters: [{ name: 'PostgreSQL backup', extensions: ['dump'] }],
+    })
+    if (canceled || !filePath) return { canceled: true }
+    return { canceled: false, ...await createBackup({ destination: filePath }) }
+  } finally {
+    backupInProgress = false
+  }
 })
 
 async function openPackagedApp() {

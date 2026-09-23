@@ -248,11 +248,27 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [backingUp, setBackingUp] = useState(false)
   const [editing, setEditing] = useState<Opportunity | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState<Opportunity | null>(null)
   const [skipDeleteConfirmation, setSkipDeleteConfirmation] = useState(() => window.localStorage.getItem(SKIP_DELETE_CONFIRMATION_KEY) === 'true')
   const [movingId, setMovingId] = useState<number | null>(null)
   const [dragOverStage, setDragOverStage] = useState<Stage | null>(null)
+
+  async function saveBackup() {
+    if (!window.trackerApi?.backup) return
+    setBackingUp(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const result = await window.trackerApi.backup()
+      if (!result.canceled && result.path) setNotice(`Backup saved to ${result.path}`)
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : 'Could not save the backup.')
+    } finally {
+      setBackingUp(false)
+    }
+  }
 
   async function remove(opportunity: Opportunity, skipFutureConfirmations = false) {
     await deleteOpportunity(opportunity.id)
@@ -335,9 +351,16 @@ function App() {
             <h1>Keep every opportunity in sight<span className="heading-period">.</span></h1>
             <p className="page-subtitle">One place to save the roles you find and follow each application as it moves forward.</p>
           </div>
-          <button className="button button-primary add-button" type="button" onClick={() => setAdding(true)}>
-            <span aria-hidden="true">+</span> Add opportunity
-          </button>
+          <div className="page-actions">
+            {window.trackerApi?.backup && (
+              <button className="button button-secondary backup-button" type="button" disabled={backingUp} onClick={() => void saveBackup()}>
+                {backingUp ? 'Saving backup…' : 'Save backup'}
+              </button>
+            )}
+            <button className="button button-primary add-button" type="button" onClick={() => setAdding(true)}>
+              <span aria-hidden="true">+</span> Add opportunity
+            </button>
+          </div>
         </section>
 
         <section className="overview" aria-label="Board overview">

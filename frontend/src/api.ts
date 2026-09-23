@@ -22,6 +22,7 @@ declare global {
   interface Window {
     trackerApi?: {
       request: (path: string, method: string, body: string | null) => Promise<{ status: number; body: unknown }>
+      backup: () => Promise<{ canceled: boolean; path?: string; bytes?: number }>
     }
   }
 }

@@ -22,6 +22,8 @@ The backend owns application rules, including stage changes, duplicate URL check
 
 The board stores the device-only deletion-confirmation preference in renderer local storage. The preference changes only the confirmation step; it does not bypass the backend API. A visible board control restores confirmations. The Electron API bridge permits only the tracker endpoints needed for listing, creating, editing, moving, and deleting cards.
 
+The desktop backup button uses a separate, narrow Electron IPC call. Electron opens a save dialog and uses the PostgreSQL 17 `pg_dump` and `pg_restore` tools already installed on this PC. It reads the app database credential from the same local secret file used to launch the API, passes the password through the backup child process environment, and writes a custom archive to a temporary file beside the chosen destination. It lists the archive with `pg_restore` before moving it to the final filename. Existing destination files are never overwritten. Backups are user-chosen files outside the installer; they are not stored in the repository or served by the API.
+
 For development, PostgreSQL runs as a Windows service and Spring Boot starts separately from Electron. The backend's `start-local.ps1` reads the local database password from `%LOCALAPPDATA%\InternshipHubData\secrets\db-password.secret`. Credentials and database files stay outside the repository and the installer directory. See the root `README.md` for startup and backup steps.
 
 ## Current-PC package

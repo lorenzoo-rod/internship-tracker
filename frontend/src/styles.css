@@ -62,6 +62,10 @@ main { width: min(100%, 1672px); margin: 0 auto; padding: 49px 36px 80px; flex: 
 .button:active { transform: translateY(1px); }
 .button-primary { background: #214e45; color: #fff; box-shadow: 0 7px 16px rgba(22, 64, 53, .12); }
 .button-primary:hover:not(:disabled) { background: #153d35; box-shadow: 0 9px 20px rgba(22, 64, 53, .18); }
+.button-secondary { background: #e8eee7; color: #355a47; }
+.button-secondary:hover:not(:disabled) { background: #dce8dc; }
+.page-actions { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.backup-button { padding: 14px 18px; font-size: 13px; }
 .add-button { flex: 0 0 auto; padding: 14px 19px; font-size: 13px; }
 .add-button span { margin-right: 9px; font-size: 20px; font-weight: 400; line-height: 0; vertical-align: -1px; }
 
@@ -128,6 +132,7 @@ main { width: min(100%, 1672px); margin: 0 auto; padding: 49px 36px 80px; flex: 
 .card-footer select:focus-visible, .button:focus-visible, .icon-button:focus-visible, .card-action:focus-visible, .text-button:focus-visible, .dialog input:focus-visible, .status-banner button:focus-visible { outline: 3px solid #8cc3ac; outline-offset: 2px; }
 
 .status-banner { margin: 0 0 16px; padding: 13px 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px; border-radius: 9px; font-size: 12px; font-weight: 600; }
+.status-banner span { overflow-wrap: anywhere; }
 .error-banner { background: #fff0ec; color: #9c503d; border: 1px solid #f4d9d2; }
 .success-banner { background: #eaf3e7; color: #45725c; border: 1px solid #d2e7d1; }
 .status-banner button { padding: 5px 10px; border: 0; border-radius: 6px; background: #fff; color: inherit; font-size: 11px; font-weight: 750; }
@@ -178,6 +183,8 @@ main { width: min(100%, 1672px); margin: 0 auto; padding: 49px 36px 80px; flex: 
   .page-heading h1 { font-size: 34px; }
   .page-subtitle { font-size: 13px; }
   .add-button { width: 100%; }
+  .page-actions { width: 100%; flex-wrap: wrap; }
+  .backup-button { flex: 1 1 auto; }
   .overview { margin-top: 29px; min-height: 86px; }
   .overview-item { padding: 0 13px; }
   .overview-item span { font-size: 10px; }

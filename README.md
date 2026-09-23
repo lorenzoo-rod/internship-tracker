@@ -8,7 +8,7 @@ On the current Windows machine, PostgreSQL 17 is installed as the `postgresql-x6
 
 Use the **Internship Hub** Start Menu shortcut. PostgreSQL must be running as `postgresql-x64-17`; the app starts and stops its own API. Its database credential is kept in `%LOCALAPPDATA%\InternshipHubData\secrets\db-password.secret`, outside the Squirrel install directory `%LOCALAPPDATA%\InternshipHub`. Updates replace application files without replacing the database or credential.
 
-Version 0.1.2 adds card editing and permanent deletion. Use the pencil and trash controls on a card. The deletion dialog can remember "Don't ask again on this device"; the board then shows a control to turn confirmations back on. A backup button is planned next, so use the manual backup steps below for important records.
+Version 0.1.3 includes card editing, permanent deletion, and a **Save backup** button. Use the pencil and trash controls on a card. The deletion dialog can remember "Don't ask again on this device"; the board then shows a control to turn confirmations back on. Click **Save backup**, choose a new `.dump` filename, and wait for the saved-path message. The app checks the archive before reporting success and will not overwrite an existing backup. Keep backup files somewhere private because they contain your saved application details.
 
 To build another installer from the repository, run `npm ci` and `npm run make` in `frontend/`. This packages the React build, Spring Boot JAR, and a pinned Eclipse Temurin 21 runtime. The build requires Maven, a Java 21 or newer JDK, and internet access for the pinned runtime on first use. The installer is at `frontend/out/make/squirrel.windows/x64/InternshipHubSetup.exe`.
 
@@ -35,7 +35,7 @@ For browser-only frontend development, run `npm run dev` in `frontend/` instead.
 
 ## Back up and restore the local database
 
-The following PowerShell commands use the current Windows installation. Backups contain posting URLs and should be stored somewhere private, outside the repository. The `pg_dump` custom archive can be checked with `pg_restore -l`. A backup was restored into a separate test database during setup.
+The following PowerShell commands are an alternative to the desktop backup button and use the current Windows installation. Backups contain posting URLs and should be stored somewhere private, outside the repository. The `pg_dump` custom archive can be checked with `pg_restore -l`. The version 0.1.3 backup was restored into a separate temporary PostgreSQL server during verification.
 
 ```powershell
 $pgBin = 'C:\Program Files\PostgreSQL\17\bin'

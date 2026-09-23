@@ -20,10 +20,11 @@ The first usable version runs locally with a separately configured Spring Boot s
 - Edit a card's title, company, and posting URL through a prefilled form. The stage remains editable through the board's existing control. A URL already used by another card is rejected with the existing-card warning.
 - Gray pencil and trash controls sit at the top right of each card, with accessible labels. Deleting a card removes it permanently after a confirmation that names the card.
 - "Don't ask again on this device" in the deletion confirmation persists across launches. A board control turns confirmations back on. A broader settings window can be designed later.
+- In the desktop app, choose a destination with **Save backup** to create a checked PostgreSQL archive of the current cards. The app reports the saved path or an error and leaves existing backup files untouched.
 
-## Next tracker improvement
+## Later backup workflows
 
-- Add a button to save a database backup to a user-chosen location, with clear success and failure feedback. Restoring a backup remains a separate workflow.
+- Provide an in-app restore workflow and consider scheduled backups after their behavior and safeguards are planned.
 
 ## Later workflows
 

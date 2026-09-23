@@ -59,11 +59,11 @@ Version 0.1.2 is installed on the current PC. Before adding permanent deletion, 
 
 ## Milestone 5.2 — Backup button
 
-- [ ] Let the user choose a destination and create a PostgreSQL backup from the installed app without needing a terminal.
-- [ ] Show the backup's destination and result clearly; verify the archive and test restoring it into a separate database.
-- [ ] Plan the restore experience and any scheduled backups separately.
+- [x] Let the user choose a destination and create a PostgreSQL backup from the installed app without needing a terminal.
+- [x] Show the backup's destination and result clearly; verify the archive and test restoring it into a separate database.
+- [x] Keep the in-app restore experience and any scheduled backups as separate future work.
 
-The backup button comes before the fresh-PC installer. Keep using manual backups until it is built. A fuller settings window and recoverable Trash remain later work.
+Version 0.1.3 is installed on the current PC. The backup code created and checked an archive of the live database, then that archive was restored into a separate temporary PostgreSQL 17 server with the same three-card count. The temporary server was stopped and removed. The installed renderer showed the backup button and its Electron bridge, and the normal shortcut reopened with the existing cards. Backups still need to be initiated by the user; a fuller settings window, in-app restore, scheduled backups, and recoverable Trash remain later work.
 
 ## Milestone 6 — Fresh Windows PC installer
 

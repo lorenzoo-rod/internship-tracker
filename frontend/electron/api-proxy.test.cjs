@@ -34,7 +34,7 @@ test('forwards only the tracker API methods and paths', async () => {
   assert.equal(calls.length, 4)
 })
 
-test('preload exposes only the tracker request bridge', async () => {
+test('preload exposes only the tracker request and backup bridge', async () => {
   let exposed
   let invoked
   const electron = {
@@ -45,9 +45,11 @@ test('preload exposes only the tracker request bridge', async () => {
   vm.runInNewContext(preload, { require: () => electron })
 
   assert.equal(exposed.name, 'trackerApi')
-  assert.deepEqual(Object.keys(exposed.api), ['request'])
+  assert.deepEqual(Object.keys(exposed.api), ['request', 'backup'])
   await exposed.api.request('/api/opportunities', 'GET', null)
   assert.equal(invoked.channel, 'tracker:request')
   assert.equal(invoked.request.path, '/api/opportunities')
   assert.equal(invoked.request.method, 'GET')
+  await exposed.api.backup()
+  assert.equal(invoked.channel, 'tracker:backup')
 })
