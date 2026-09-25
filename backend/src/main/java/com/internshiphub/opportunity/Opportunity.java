@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "opportunities")
@@ -22,8 +23,17 @@ public class Opportunity {
     @Column(nullable = false)
     private String company;
 
-    @Column(name = "posting_url", nullable = false, unique = true, length = 2048)
-    private String postingUrl;
+    @Column(name = "discovery_url", unique = true, length = 2048)
+    private String discoveryUrl;
+
+    @Column(name = "application_url", unique = true, length = 2048)
+    private String applicationUrl;
+
+    @Column(name = "status_url", length = 2048)
+    private String statusUrl;
+
+    @Transient
+    private Long statusUrlMatchId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -32,10 +42,12 @@ public class Opportunity {
     protected Opportunity() {
     }
 
-    public Opportunity(String title, String company, String postingUrl) {
+    public Opportunity(String title, String company, String discoveryUrl, String applicationUrl, String statusUrl) {
         this.title = title;
         this.company = company;
-        this.postingUrl = postingUrl;
+        this.discoveryUrl = discoveryUrl;
+        this.applicationUrl = applicationUrl;
+        this.statusUrl = statusUrl;
         this.stage = Stage.SAVED;
     }
 
@@ -51,8 +63,24 @@ public class Opportunity {
         return company;
     }
 
-    public String getPostingUrl() {
-        return postingUrl;
+    public String getDiscoveryUrl() {
+        return discoveryUrl;
+    }
+
+    public String getApplicationUrl() {
+        return applicationUrl;
+    }
+
+    public String getStatusUrl() {
+        return statusUrl;
+    }
+
+    public Long getStatusUrlMatchId() {
+        return statusUrlMatchId;
+    }
+
+    public void setStatusUrlMatchId(Long statusUrlMatchId) {
+        this.statusUrlMatchId = statusUrlMatchId;
     }
 
     public Stage getStage() {
@@ -63,9 +91,11 @@ public class Opportunity {
         this.stage = stage;
     }
 
-    public void updateDetails(String title, String company, String postingUrl) {
+    public void updateDetails(String title, String company, String discoveryUrl, String applicationUrl, String statusUrl) {
         this.title = title;
         this.company = company;
-        this.postingUrl = postingUrl;
+        this.discoveryUrl = discoveryUrl;
+        this.applicationUrl = applicationUrl;
+        this.statusUrl = statusUrl;
     }
 }

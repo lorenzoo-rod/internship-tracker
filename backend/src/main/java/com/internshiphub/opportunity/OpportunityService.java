@@ -24,19 +24,20 @@ public class OpportunityService {
         return repository.findById(id).orElseThrow(() -> new OpportunityNotFoundException(id));
     }
 
+    @Transactional
     public Opportunity create(CreateOpportunityRequest request) {
-        String url = request.postingUrl().trim();
-        repository.findByPostingUrl(url).ifPresent(existing -> {
-            throw new DuplicateOpportunityException(existing);
-        });
+        String discoveryUrl = clean(request.discoveryUrl());
+        String applicationUrl = clean(request.applicationUrl());
+        String statusUrl = clean(request.statusUrl());
+        checkDuplicates(discoveryUrl, applicationUrl, null);
 
-        Opportunity opportunity = new Opportunity(request.title().trim(), request.company().trim(), url);
+        Opportunity opportunity = new Opportunity(request.title().trim(), request.company().trim(), discoveryUrl, applicationUrl, statusUrl);
         try {
-            return repository.saveAndFlush(opportunity);
+            Opportunity created = repository.saveAndFlush(opportunity);
+            setStatusWarning(created);
+            return created;
         } catch (DataIntegrityViolationException failure) {
-            repository.findByPostingUrl(url).ifPresent(existing -> {
-                throw new DuplicateOpportunityException(existing);
-            });
+            checkDuplicates(discoveryUrl, applicationUrl, null);
             throw failure;
         }
     }
@@ -48,22 +49,44 @@ public class OpportunityService {
         return opportunity;
     }
 
+    @Transactional
     public Opportunity updateDetails(Long id, CreateOpportunityRequest request) {
         Opportunity opportunity = get(id);
-        String url = request.postingUrl().trim();
-        repository.findByPostingUrl(url)
-                .filter(existing -> !existing.getId().equals(id))
-                .ifPresent(existing -> { throw new DuplicateOpportunityException(existing); });
+        String discoveryUrl = clean(request.discoveryUrl());
+        String applicationUrl = clean(request.applicationUrl());
+        String statusUrl = clean(request.statusUrl());
+        checkDuplicates(discoveryUrl, applicationUrl, id);
 
-        opportunity.updateDetails(request.title().trim(), request.company().trim(), url);
+        opportunity.updateDetails(request.title().trim(), request.company().trim(), discoveryUrl, applicationUrl, statusUrl);
         try {
-            return repository.saveAndFlush(opportunity);
+            Opportunity updated = repository.saveAndFlush(opportunity);
+            setStatusWarning(updated);
+            return updated;
         } catch (DataIntegrityViolationException failure) {
-            repository.findByPostingUrl(url)
-                    .filter(existing -> !existing.getId().equals(id))
-                    .ifPresent(existing -> { throw new DuplicateOpportunityException(existing); });
+            checkDuplicates(discoveryUrl, applicationUrl, id);
             throw failure;
         }
+    }
+
+    private static String clean(String url) {
+        if (url == null || url.isBlank()) return null;
+        return url.trim();
+    }
+
+    private void checkDuplicates(String discoveryUrl, String applicationUrl, Long ownId) {
+        for (String url : new String[] { discoveryUrl, applicationUrl }) {
+            if (url == null) continue;
+            repository.findByTrackedUrl(url).stream()
+                    .filter(existing -> !existing.getId().equals(ownId))
+                    .findFirst()
+                    .ifPresent(existing -> { throw new DuplicateOpportunityException(existing); });
+        }
+    }
+
+    private void setStatusWarning(Opportunity opportunity) {
+        if (opportunity.getStatusUrl() == null) return;
+        repository.findFirstByStatusUrlAndIdNot(opportunity.getStatusUrl(), opportunity.getId())
+                .ifPresent(existing -> opportunity.setStatusUrlMatchId(existing.getId()));
     }
 
     @Transactional

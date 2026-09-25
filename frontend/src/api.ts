@@ -6,11 +6,19 @@ export type Opportunity = {
   id: number
   title: string
   company: string
-  postingUrl: string
+  discoveryUrl?: string | null
+  applicationUrl: string | null
+  statusUrl?: string | null
+  statusUrlMatchId?: number | null
   stage: Stage
 }
 
-export type NewOpportunity = Pick<Opportunity, 'title' | 'company' | 'postingUrl'>
+export type NewOpportunity = Pick<Opportunity, 'title' | 'company'> & {
+  discoveryUrl: string | null
+  applicationUrl: string | null
+  statusUrl: string | null
+}
+export type BrowserDraft = { applicationUrl: string; discoveryUrl?: string; title?: string; company?: string }
 
 export type PostingPreview = { status: 'found' | 'unsupported' | 'unavailable'; title: string | null; company: string | null }
 
@@ -25,6 +33,7 @@ declare global {
     trackerApi?: {
       request: (path: string, method: string, body: string | null) => Promise<{ status: number; body: unknown }>
       backup: () => Promise<{ canceled: boolean; path?: string; bytes?: number }>
+      onBrowserDraft?: (callback: (draft: BrowserDraft) => void) => () => void
     }
   }
 }

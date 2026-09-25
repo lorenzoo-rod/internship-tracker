@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Internship Hub — Add to saved",
+  "version": "0.1.0",
+  "description": "Send the current application page to Internship Hub for review.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_title": "Add to Internship Hub",
+    "default_popup": "popup.html"
+  }
+}

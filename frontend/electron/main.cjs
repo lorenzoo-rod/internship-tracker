@@ -4,6 +4,7 @@ const { startPackagedBackend } = require('./backend-launcher.cjs')
 const { forwardTrackerRequest } = require('./api-proxy.cjs')
 const { createBackup } = require('./backup.cjs')
 const { provisionDatabase, secretPath } = require('./database-setup.cjs')
+const { parseBrowserDraft } = require('./browser-draft.cjs')
 const fs = require('node:fs')
 const squirrelStartup = require('electron-squirrel-startup')
 
@@ -13,12 +14,31 @@ let apiBase = 'http://127.0.0.1:8080'
 let quitting = false
 let backupInProgress = false
 let setupMode = false
+let pendingBrowserDraft = null
+let boardReady = false
+
+function installChromeExtensionFiles() {
+  const destination = path.join(process.env.LOCALAPPDATA, 'InternshipHubData', 'chrome-extension')
+  fs.mkdirSync(destination, { recursive: true })
+  for (const name of ['manifest.json', 'popup.html', 'popup.js']) {
+    fs.copyFileSync(path.join(__dirname, '..', 'chrome-extension', name), path.join(destination, name))
+  }
+}
+
+function acceptBrowserLink(commandLine) {
+  const draft = commandLine.map(parseBrowserDraft).find(Boolean)
+  if (!draft) return
+  if (boardReady && mainWindow) mainWindow.webContents.send('tracker:browser-draft', draft)
+  else pendingBrowserDraft = draft
+  if (mainWindow) { mainWindow.show(); mainWindow.focus() }
+}
 
 function isAppWindow(event) {
   return mainWindow && event.sender === mainWindow.webContents && event.senderFrame === mainWindow.webContents.mainFrame
 }
 
 function createWindow() {
+  boardReady = false
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -55,6 +75,14 @@ ipcMain.handle('tracker:request', (event, request) => {
     throw new Error('The local API is not running.')
   }
   return forwardTrackerRequest(request, fetch, apiBase)
+})
+
+ipcMain.handle('tracker:take-browser-draft', (event) => {
+  if (!isAppWindow(event)) throw new Error('Request did not come from the Internship Hub window')
+  boardReady = true
+  const draft = pendingBrowserDraft
+  pendingBrowserDraft = null
+  return draft
 })
 
 ipcMain.handle('tracker:backup', async (event) => {
@@ -102,6 +130,7 @@ async function openPackagedApp() {
           app.quit()
         }
       })
+      boardReady = false
       await mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
       return
     } catch (error) {
@@ -123,9 +152,15 @@ async function openPackagedApp() {
 if (squirrelStartup || !app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  app.on('second-instance', () => { if (mainWindow) { mainWindow.show(); mainWindow.focus() } })
+  app.on('second-instance', (_event, commandLine) => {
+    acceptBrowserLink(Array.isArray(commandLine) ? commandLine : [])
+    if (mainWindow) { mainWindow.show(); mainWindow.focus() }
+  })
   app.whenReady().then(() => {
+    if (app.isPackaged && process.platform === 'win32') app.setAsDefaultProtocolClient?.('internship-hub')
+    if (app.isPackaged && fs.copyFileSync) installChromeExtensionFiles()
     createWindow()
+    acceptBrowserLink(process.argv || [])
     if (app.isPackaged) {
       if (!fs.existsSync(secretPath(process.env.LOCALAPPDATA))) {
         setupMode = true

@@ -15,6 +15,8 @@ function deferred() {
 function runPackagedMain(startBackend, onError = async () => ({ response: 0 })) {
   const windows = []
   const dialogs = []
+  const appHandlers = {}
+  const ipcHandlers = {}
   let quitCount = 0
   class Window {
     constructor() {
@@ -23,10 +25,14 @@ function runPackagedMain(startBackend, onError = async () => ({ response: 0 })) 
         mainFrame: {},
         setWindowOpenHandler() {},
         on() {},
+        sent: [],
+        send(channel, draft) { this.sent.push({ channel, draft }) },
       }
       windows.push(this)
     }
     on() {}
+    show() {}
+    focus() {}
     loadFile(file) { this.loaded.push(path.basename(file)); return Promise.resolve() }
   }
   Window.getAllWindows = () => windows
@@ -34,7 +40,7 @@ function runPackagedMain(startBackend, onError = async () => ({ response: 0 })) 
     isPackaged: true,
     requestSingleInstanceLock: () => true,
     whenReady: () => Promise.resolve(),
-    on() {},
+    on(name, handler) { appHandlers[name] = handler },
     quit() { quitCount += 1 },
   }
   const fakeElectron = {
@@ -44,7 +50,7 @@ function runPackagedMain(startBackend, onError = async () => ({ response: 0 })) 
       async showMessageBox(_window, options) { dialogs.push(options); return onError(options) },
       showErrorBox() {},
     },
-    ipcMain: { handle() {} },
+    ipcMain: { handle(name, handler) { ipcHandlers[name] = handler } },
     shell: { openExternal() {} },
   }
   const modules = {
@@ -55,6 +61,7 @@ function runPackagedMain(startBackend, onError = async () => ({ response: 0 })) 
     './api-proxy.cjs': { forwardTrackerRequest() {} },
     './backup.cjs': { createBackup() {} },
     './database-setup.cjs': { provisionDatabase() {}, secretPath: () => 'credential' },
+    './browser-draft.cjs': require('./browser-draft.cjs'),
     'electron-squirrel-startup': false,
   }
   const source = fs.readFileSync(path.join(__dirname, 'main.cjs'), 'utf8')
@@ -65,7 +72,7 @@ function runPackagedMain(startBackend, onError = async () => ({ response: 0 })) 
     Error,
     fetch() {},
   })
-  return { windows, dialogs, get quitCount() { return quitCount } }
+  return { windows, dialogs, appHandlers, ipcHandlers, get quitCount() { return quitCount } }
 }
 
 function readyBackend() {
@@ -110,4 +117,19 @@ test('startup failure offers retry and retains the screen until retry succeeds',
   await settle()
   assert.deepEqual(launch.windows[0].loaded, ['startup.html', 'index.html'])
   assert.equal(launch.quitCount, 0)
+})
+
+test('a browser link opens a review draft through the restricted bridge', async () => {
+  const launch = runPackagedMain(async () => readyBackend())
+  await settle()
+  const window = launch.windows[0]
+  const event = { sender: window.webContents, senderFrame: window.webContents.mainFrame }
+  assert.equal(launch.ipcHandlers['tracker:take-browser-draft'](event), null)
+  launch.appHandlers['second-instance']({}, [
+    'InternshipHub.exe',
+    'internship-hub://add/?applicationUrl=https%3A%2F%2Fexample.com%2Fapply&title=Intern&company=Example',
+  ])
+  assert.equal(window.webContents.sent.length, 1)
+  assert.equal(window.webContents.sent[0].channel, 'tracker:browser-draft')
+  assert.equal(window.webContents.sent[0].draft.applicationUrl, 'https://example.com/apply')
 })

@@ -111,17 +111,19 @@ Version 0.1.9 adds the Greenhouse preview endpoint and Find review flow. The pre
 
 Version 0.1.10 adds a MyGreenhouse Jobs link to the Find browse panel. It opens Greenhouse's candidate portal in the normal browser; the user may need to sign in, and only participating employers' roles appear. This navigation does not import MyGreenhouse listings into Internship Hub. The user can open a company's Greenhouse-hosted job page and paste that direct link into the existing review flow. The current-PC installer was built and installed; the installed API reopened with six existing cards, and the installed UI bundle matched the tested build.
 
-After pasted-link autofill, add an explicit browser **Add to saved** action for company application pages. A Chrome extension can get the current tab's URL and title when the user invokes it using temporary [`activeTab` access](https://developer.chrome.com/docs/extensions/develop/concepts/activeTab); choose and secure the browser-to-desktop handoff before implementation. Review all inferred fields and allow manual edits. Extend the card model to keep the discovery URL, direct application URL, and optional status URL separately, and migrate existing single-URL cards safely. Search and filtering of saved cards and searchable in-app listings remain later steps in this priority area. Customizable columns and the broader application-materials area follow.
+Version 0.1.11 implements a user-invoked Chrome **Add to saved** action using temporary [`activeTab` access](https://developer.chrome.com/docs/extensions/develop/concepts/activeTab) and a validated desktop link. It also adds the three-link card model and versioned database migration. Search and filtering of saved cards and searchable in-app listings remain later steps in this priority area. Customizable columns and the broader application-materials area follow.
 
-For that card-model step, show every link in the pencil detail form. Feature the application link on `SAVED` card previews and the status link on later-stage previews when available; fall back to the application link if no status link exists. Migrate an existing `postingUrl` to the application link for a `SAVED` card or to the status link for a card in any later stage, preserving its exact value. Test this migration against a copy of existing data before updating the installed app. Block duplicate discovery or application URLs across cards, including cross-field matches; warn but allow a shared status URL. For the browser step, capture the active company application URL, offer editable title/company suggestions when available, and create the card in `SAVED` only after review. The browser-to-desktop handoff still needs a secure design before implementation.
+Before updating the installed app, test the migration against a copy of existing data and save a fresh checked backup. Then verify the installed Chrome handoff, review form, duplicate behavior, and preservation of existing cards.
 
 ## Later milestones
+
+Version 0.1.11 combines the three-link card migration with Chrome **Add to saved** and is installed on the current PC. A verified backup was restored into an isolated PostgreSQL 17 server; the migration preserved all seven existing links. The installed API reopened with seven cards and no legacy `postingUrl` field, and the app copied the Chrome extension to a stable folder. The user still needs to load the unpacked extension in Chrome and check the full browser-to-review handoff. Chrome Web Store distribution remains later work.
 
 - Customizable board columns: design persistent stage identities and ordering, then let the user add, rename, recolor, and delete columns. Decide how new cards get a default stage and what happens to cards in a deleted column before implementation. Migrate existing cards safely and test the API, focused board, and backup/restore with custom stages.
 - Search and filtering.
 - Global shortcut, quick-add overlay, and system tray.
 - Keyboard shortcuts for common board actions, then a Settings screen for viewing and customizing them. Plan defaults, shortcut conflicts, and accessible alternatives before implementation.
-- Browser integration.
+- Broader browser integration and Chrome Web Store distribution.
 - Browse internship postings in or from the app and add a selected posting with available details prefilled for review.
 - Automatic discovery and recommendations.
 - Email-based application updates.

@@ -9,6 +9,7 @@ import {
   updateStage,
   updateOpportunity,
   type NewOpportunity,
+  type BrowserDraft,
   type Opportunity,
   type Stage,
 } from './api'
@@ -53,6 +54,14 @@ function isGreenhouseJobLink(url: string): boolean {
   }
 }
 
+function isDiscoveryLink(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+    return host === 'linkedin.com' || host.endsWith('.linkedin.com')
+      || host === 'joinhandshake.com' || host.endsWith('.joinhandshake.com')
+  } catch { return false }
+}
+
 function OpportunityCard({
   opportunity,
   moving,
@@ -66,7 +75,12 @@ function OpportunityCard({
   onEdit: (opportunity: Opportunity) => void
   onDelete: (opportunity: Opportunity) => void
 }) {
-  const link = postingLink(opportunity.postingUrl)
+  const primaryUrl = opportunity.stage === 'SAVED'
+    ? (opportunity.applicationUrl ?? opportunity.discoveryUrl ?? opportunity.statusUrl)
+    : (opportunity.statusUrl ?? opportunity.applicationUrl ?? opportunity.discoveryUrl)
+  const link = primaryUrl ? postingLink(primaryUrl) : null
+  const linkLabel = opportunity.stage === 'SAVED' && opportunity.applicationUrl === primaryUrl
+    ? 'Apply' : opportunity.stage !== 'SAVED' && opportunity.statusUrl === primaryUrl ? 'Status' : 'Open link'
 
   function startDrag(event: DragEvent<HTMLElement>) {
     event.dataTransfer.setData('application/x-internship-opportunity', String(opportunity.id))
@@ -97,11 +111,11 @@ function OpportunityCard({
       <h3>{opportunity.title}</h3>
       {link ? (
         <a className="posting-link" href={link} target="_blank" rel="noreferrer">
-          {postingHost(opportunity.postingUrl)} <span aria-hidden="true">↗</span>
+          {linkLabel}: {postingHost(primaryUrl!)} <span aria-hidden="true">↗</span>
           <span className="sr-only"> (opens in a new tab)</span>
         </a>
       ) : (
-        <span className="posting-link">{opportunity.postingUrl}</span>
+        <span className="posting-link">No link available</span>
       )}
       <div className="card-footer">
         <label htmlFor={`stage-${opportunity.id}`}>Move to</label>
@@ -155,7 +169,14 @@ function OpportunityFormDialog({
     const opportunity: NewOpportunity = {
       title: String(form.get('title') ?? '').trim(),
       company: String(form.get('company') ?? '').trim(),
-      postingUrl: String(form.get('postingUrl') ?? '').trim(),
+      discoveryUrl: String(form.get('discoveryUrl') ?? '').trim() || null,
+      applicationUrl: String(form.get('applicationUrl') ?? '').trim() || null,
+      statusUrl: String(form.get('statusUrl') ?? '').trim() || null,
+    }
+    if (!opportunity.discoveryUrl && !opportunity.applicationUrl && !opportunity.statusUrl) {
+      setError('Add at least one link before saving.')
+      setSaving(false)
+      return
     }
 
     try {
@@ -187,9 +208,13 @@ function OpportunityFormDialog({
           <input id="title" name="title" type="text" defaultValue={editing?.title ?? initial?.title} placeholder="e.g. Product Design Intern" maxLength={255} required autoFocus />
           <label htmlFor="company">Company</label>
           <input id="company" name="company" type="text" defaultValue={editing?.company ?? initial?.company} placeholder="e.g. Acme Studio" maxLength={255} required />
-          <label htmlFor="postingUrl">Posting URL</label>
-          <input id="postingUrl" name="postingUrl" type="url" defaultValue={editing?.postingUrl ?? initial?.postingUrl} placeholder="https://company.com/careers/internship" maxLength={2048} required />
-          <p className="field-note">A matching URL will show the card you already saved.</p>
+          <label htmlFor="discoveryUrl">Discovery URL</label>
+          <input id="discoveryUrl" name="discoveryUrl" type="url" defaultValue={editing?.discoveryUrl ?? initial?.discoveryUrl ?? ''} placeholder="https://www.linkedin.com/jobs/view/..." maxLength={2048} />
+          <label htmlFor="applicationUrl">Application URL</label>
+          <input id="applicationUrl" name="applicationUrl" type="url" defaultValue={editing?.applicationUrl ?? initial?.applicationUrl ?? ''} placeholder="https://company.com/careers/internship" maxLength={2048} />
+          <label htmlFor="statusUrl">Application status URL</label>
+          <input id="statusUrl" name="statusUrl" type="url" defaultValue={editing?.statusUrl ?? initial?.statusUrl ?? ''} placeholder="https://company.com/candidate/dashboard" maxLength={2048} />
+          <p className="field-note">Add at least one link. Matching discovery or application links show the existing card. Status links may be shared.</p>
 
           {duplicate && (
             <div className="form-message duplicate-message" role="alert">
@@ -278,6 +303,31 @@ function App() {
   const [movingId, setMovingId] = useState<number | null>(null)
   const [dragOverStage, setDragOverStage] = useState<Stage | null>(null)
   const [focusedStage, setFocusedStage] = useState<Stage | null>(null)
+
+  useEffect(() => {
+    if (!window.trackerApi?.onBrowserDraft) return
+    return window.trackerApi.onBrowserDraft((draft: BrowserDraft) => {
+      setView('board')
+      setEditing(null)
+      setAddDraft({
+        applicationUrl: draft.applicationUrl,
+        discoveryUrl: draft.discoveryUrl ?? null,
+        title: draft.title ?? '',
+        company: draft.company ?? '',
+      })
+      setPreviewMessage('Captured from Chrome. Review the application link, title, and company before saving.')
+      if (isGreenhouseJobLink(draft.applicationUrl)) {
+        void previewPosting(draft.applicationUrl).then((preview) => {
+          if (preview.status === 'found') {
+            setAddDraft((current) => current?.applicationUrl === draft.applicationUrl
+              ? { ...current, title: preview.title || current.title, company: preview.company || current.company }
+              : current)
+            setPreviewMessage('Details found on Greenhouse. Review and edit them before saving.')
+          }
+        }).catch(() => {})
+      }
+    })
+  }, [])
 
   useEffect(() => {
     if (!focusedStage || view !== 'board' || addDraft || editing || confirmingDelete) return
@@ -378,7 +428,7 @@ function App() {
     }
     setFindError(null)
     setLookingUp(true)
-    let draft: Partial<NewOpportunity> = { postingUrl: url }
+    let draft: Partial<NewOpportunity> = isDiscoveryLink(url) ? { discoveryUrl: url } : { applicationUrl: url }
     let message = 'Enter the title and company before saving.'
     try {
       if (isGreenhouseJobLink(url)) {
@@ -427,7 +477,7 @@ function App() {
               <section className="find-panel" aria-labelledby="browse-title">
                 <span className="find-step">01 / BROWSE</span>
                 <h2 id="browse-title">Browse job boards</h2>
-                <p>Search LinkedIn or MyGreenhouse in your browser. MyGreenhouse may ask you to sign in and shows jobs from participating employers. Open a company's job page, then paste its link below for review.</p>
+                <p>Search LinkedIn or MyGreenhouse in your browser. MyGreenhouse may ask you to sign in. On a company application page, use the Chrome Add to saved extension to send the link here for review, or paste it below.</p>
                 <div className="find-links">
                   <a className="button button-primary find-link" href={LINKEDIN_JOBS_URL} target="_blank" rel="noreferrer">Browse LinkedIn Jobs <span aria-hidden="true">↗</span></a>
                   <a className="button button-secondary find-link" href={MY_GREENHOUSE_URL} target="_blank" rel="noreferrer">Browse MyGreenhouse Jobs <span aria-hidden="true">↗</span></a>
@@ -436,7 +486,7 @@ function App() {
               <section className="find-panel" aria-labelledby="save-posting-title">
                 <span className="find-step">02 / SAVE</span>
                 <h2 id="save-posting-title">Bring a posting to your board</h2>
-                <p>Copy a posting link from your browser. Review its title and company before saving it as a card.</p>
+                <p>Copy a posting link from your browser. LinkedIn and Handshake links become discovery links; company pages become application links. Review every detail before saving.</p>
                 <form className="find-form" onSubmit={reviewPosting}>
                   <label htmlFor="find-posting-url">Posting link</label>
                   <div className="find-form-row">
@@ -574,17 +624,17 @@ function App() {
       </main>
 
       <footer className="site-footer"><span>Internship Hub</span><span>Keep moving forward, one application at a time.</span></footer>
-      {addDraft && <OpportunityFormDialog initial={addDraft} previewMessage={previewMessage ?? undefined} onClose={() => { setAddDraft(null); setPreviewMessage(null) }} onSaved={(created) => {
+      {addDraft && <OpportunityFormDialog key={JSON.stringify(addDraft)} initial={addDraft} previewMessage={previewMessage ?? undefined} onClose={() => { setAddDraft(null); setPreviewMessage(null) }} onSaved={(created) => {
         setOpportunities((items) => [...items, created])
         setAddDraft(null)
         setPreviewMessage(null)
         setView('board')
-        setNotice(`${created.title} added to Saved.`)
+        setNotice(created.statusUrlMatchId ? `${created.title} added to Saved. Its status link also appears on card #${created.statusUrlMatchId}.` : `${created.title} added to Saved.`)
       }} />}
       {editing && <OpportunityFormDialog key={editing.id} editing={editing} onClose={() => setEditing(null)} onSaved={(updated) => {
         setOpportunities((items) => items.map((item) => item.id === updated.id ? updated : item))
         setEditing(null)
-        setNotice(`${updated.title} updated.`)
+        setNotice(updated.statusUrlMatchId ? `${updated.title} updated. Its status link also appears on card #${updated.statusUrlMatchId}.` : `${updated.title} updated.`)
       }} />}
       {confirmingDelete && <DeleteOpportunityDialog opportunity={confirmingDelete} onClose={() => setConfirmingDelete(null)} onConfirm={(skip) => remove(confirmingDelete, skip)} />}
     </div>

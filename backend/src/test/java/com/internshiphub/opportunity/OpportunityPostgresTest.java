@@ -24,7 +24,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
+@TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=validate")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class OpportunityPostgresTest {
     private static final EmbeddedPostgres POSTGRES = startPostgres();
@@ -57,7 +57,7 @@ class OpportunityPostgresTest {
         }
 
         String create = """
-                {"title":"Software Intern","company":"Example Co","postingUrl":"https://example.com/job/pg"}
+                {"title":"Software Intern","company":"Example Co","applicationUrl":"https://example.com/job/pg"}
                 """;
         mvc.perform(post("/api/opportunities").contentType(MediaType.APPLICATION_JSON).content(create))
                 .andExpect(status().isCreated())
@@ -65,7 +65,7 @@ class OpportunityPostgresTest {
 
         mvc.perform(post("/api/opportunities").contentType(MediaType.APPLICATION_JSON).content(create))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.existing.postingUrl").value("https://example.com/job/pg"));
+                .andExpect(jsonPath("$.existing.applicationUrl").value("https://example.com/job/pg"));
 
         mvc.perform(patch("/api/opportunities/1/stage")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -80,7 +80,7 @@ class OpportunityPostgresTest {
         mvc.perform(patch("/api/opportunities/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"title":"Updated Intern","company":"Example Co","postingUrl":"https://example.com/job/pg-updated"}
+                                {"title":"Updated Intern","company":"Example Co","applicationUrl":"https://example.com/job/pg-updated"}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Updated Intern"))

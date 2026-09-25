@@ -24,7 +24,7 @@ it('loads the board and shows saved opportunities in their stage', async () => {
     id: 7,
     title: 'Software Intern',
     company: 'Example Co',
-    postingUrl: 'https://example.com/jobs/7',
+    applicationUrl: 'https://example.com/jobs/7',
     stage: 'INTERVIEWING',
   }
   vi.stubGlobal('fetch', vi.fn(async () => reply(200, [existing])))
@@ -33,14 +33,14 @@ it('loads the board and shows saved opportunities in their stage', async () => {
 
   const column = await screen.findByRole('region', { name: 'Interviewing stage' })
   expect(within(column).getByRole('heading', { name: 'Software Intern' })).not.toBeNull()
-  expect(screen.getByText('example.com')).not.toBeNull()
+  expect(within(column).getByRole('link', { name: /example.com/ })).not.toBeNull()
 })
 
 it('focuses a stage, switches through counted tabs, moves cards, and returns to the full board', async () => {
   const user = userEvent.setup()
   let cards: Opportunity[] = [
-    { id: 1, title: 'Software Intern', company: 'Example Co', postingUrl: 'https://example.com/one', stage: 'SAVED' },
-    { id: 2, title: 'Research Intern', company: 'Other Co', postingUrl: 'https://example.com/two', stage: 'APPLIED' },
+    { id: 1, title: 'Software Intern', company: 'Example Co', applicationUrl: 'https://example.com/one', stage: 'SAVED' },
+    { id: 2, title: 'Research Intern', company: 'Other Co', applicationUrl: 'https://example.com/two', stage: 'APPLIED' },
   ]
   vi.stubGlobal('fetch', vi.fn(async (_path: string, options?: RequestInit) => {
     if (!options?.method) return reply(200, cards)
@@ -91,7 +91,7 @@ it('focuses a stage, switches through counted tabs, moves cards, and returns to 
 
 it('keeps card controls independent of column focus and gives Escape to an open dialog first', async () => {
   const user = userEvent.setup()
-  const existing: Opportunity = { id: 1, title: 'Software Intern', company: 'Example Co', postingUrl: 'https://example.com/one', stage: 'SAVED' }
+  const existing: Opportunity = { id: 1, title: 'Software Intern', company: 'Example Co', applicationUrl: 'https://example.com/one', stage: 'SAVED' }
   vi.stubGlobal('fetch', vi.fn(async () => reply(200, [existing])))
 
   render(<App />)
@@ -115,7 +115,7 @@ it('uses the Electron bridge when the desktop shell provides it', async () => {
     id: 4,
     title: 'Research Intern',
     company: 'Example Lab',
-    postingUrl: 'https://example.com/jobs/4',
+    applicationUrl: 'https://example.com/jobs/4',
     stage: 'SAVED',
   }
   const bridge = vi.fn(async () => ({ status: 200, body: [existing] }))
@@ -130,6 +130,35 @@ it('uses the Electron bridge when the desktop shell provides it', async () => {
   expect(browserFetch).not.toHaveBeenCalled()
 })
 
+it('reviews a Chrome capture before saving a card', async () => {
+  let deliver: ((draft: { applicationUrl: string; title?: string; company?: string }) => void) | undefined
+  window.trackerApi = {
+    request: vi.fn(async () => ({ status: 200, body: [] })),
+    backup: vi.fn(async () => ({ canceled: true })),
+    onBrowserDraft: (callback) => { deliver = callback; return () => {} },
+  }
+  render(<App />)
+  await screen.findByText('New opportunities start here')
+  deliver?.({ applicationUrl: 'https://example.com/apply', title: 'Software Intern', company: 'Example Co' })
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByLabelText('Application URL')).toHaveProperty('value', 'https://example.com/apply')
+  expect(within(dialog).getByLabelText('Role title')).toHaveProperty('value', 'Software Intern')
+  expect(window.trackerApi.request).toHaveBeenCalledTimes(1)
+})
+
+it('shows application links in Saved and status links after applying', async () => {
+  const cards: Opportunity[] = [
+    { id: 1, title: 'Saved role', company: 'Example', applicationUrl: 'https://example.com/apply', statusUrl: 'https://example.com/status', stage: 'SAVED' },
+    { id: 2, title: 'Applied role', company: 'Example', applicationUrl: 'https://example.com/apply-2', statusUrl: 'https://example.com/status-2', stage: 'APPLIED' },
+  ]
+  vi.stubGlobal('fetch', vi.fn(async () => reply(200, cards)))
+  render(<App />)
+  const saved = await screen.findByRole('region', { name: 'Saved stage' })
+  const applied = screen.getByRole('region', { name: 'Applied stage' })
+  expect(within(saved).getByRole('link', { name: /Apply:/ }).getAttribute('href')).toBe('https://example.com/apply')
+  expect(within(applied).getByRole('link', { name: /Status:/ }).getAttribute('href')).toBe('https://example.com/status-2')
+})
+
 it('adds a card, moves it, and shows the existing card on duplicate save', async () => {
   const user = userEvent.setup()
   let cards: Opportunity[] = []
@@ -138,9 +167,9 @@ it('adds a card, moves it, and shows the existing card on duplicate save', async
 
     if (options.method === 'POST') {
       const submitted = JSON.parse(String(options.body))
-      const existing = cards.find((card) => card.postingUrl === submitted.postingUrl.trim())
+      const existing = cards.find((card) => card.applicationUrl === submitted.applicationUrl.trim())
       if (existing) return reply(409, { code: 'DUPLICATE_POSTING_URL', existing })
-      const created: Opportunity = { ...submitted, postingUrl: submitted.postingUrl.trim(), id: 1, stage: 'SAVED' }
+      const created: Opportunity = { ...submitted, applicationUrl: submitted.applicationUrl.trim(), id: 1, stage: 'SAVED' }
       cards = [created]
       return reply(201, created)
     }
@@ -161,7 +190,7 @@ it('adds a card, moves it, and shows the existing card on duplicate save', async
   const form = screen.getByRole('dialog')
   await user.type(within(form).getByLabelText('Role title'), 'Software Intern')
   await user.type(within(form).getByLabelText('Company'), 'Example Co')
-  await user.type(within(form).getByLabelText('Posting URL'), 'https://example.com/jobs/1')
+  await user.type(within(form).getByLabelText('Application URL'), 'https://example.com/jobs/1')
   await user.click(within(form).getByRole('button', { name: 'Add opportunity' }))
 
   const saved = await screen.findByRole('region', { name: 'Saved stage' })
@@ -174,7 +203,7 @@ it('adds a card, moves it, and shows the existing card on duplicate save', async
   const duplicateForm = screen.getByRole('dialog')
   await user.type(within(duplicateForm).getByLabelText('Role title'), 'Another Intern')
   await user.type(within(duplicateForm).getByLabelText('Company'), 'Example Co')
-  await user.type(within(duplicateForm).getByLabelText('Posting URL'), 'https://example.com/jobs/1')
+  await user.type(within(duplicateForm).getByLabelText('Application URL'), 'https://example.com/jobs/1')
   await user.click(within(duplicateForm).getByRole('button', { name: 'Add opportunity' }))
 
   expect(await within(duplicateForm).findByText('Already on your board')).not.toBeNull()
@@ -195,15 +224,15 @@ it('adds a card, moves it, and shows the existing card on duplicate save', async
   expect(await within(interviewing).findByRole('heading', { name: 'Software Intern' })).not.toBeNull()
 })
 
-it('opens LinkedIn Jobs from Find and reviews a pasted posting before saving', async () => {
+it('opens LinkedIn Jobs from Find and reviews a discovery link before saving', async () => {
   const user = userEvent.setup()
-  const postingUrl = 'https://www.linkedin.com/jobs/view/12345/'
+  const applicationUrl = 'https://www.linkedin.com/jobs/view/12345/'
   let cards: Opportunity[] = []
   const fetchMock = vi.fn(async (_path: string, options?: RequestInit) => {
     if (!options?.method) return reply(200, cards)
     if (options.method === 'POST') {
       const submitted = JSON.parse(String(options.body))
-      const existing = cards.find((card) => card.postingUrl === submitted.postingUrl)
+      const existing = cards.find((card) => card.discoveryUrl === submitted.discoveryUrl)
       if (existing) return reply(409, { code: 'DUPLICATE_POSTING_URL', existing })
       const created: Opportunity = { ...submitted, id: 1, stage: 'SAVED' }
       cards = [created]
@@ -222,10 +251,10 @@ it('opens LinkedIn Jobs from Find and reviews a pasted posting before saving', a
   expect(greenhouse.getAttribute('href')).toBe('https://my.greenhouse.io/')
   expect(greenhouse.getAttribute('target')).toBe('_blank')
 
-  await user.type(screen.getByLabelText('Posting link'), postingUrl)
+  await user.type(screen.getByLabelText('Posting link'), applicationUrl)
   await user.click(screen.getByRole('button', { name: 'Review for board' }))
   const dialog = screen.getByRole('dialog')
-  expect(within(dialog).getByLabelText('Posting URL')).toHaveProperty('value', postingUrl)
+  expect(within(dialog).getByLabelText('Discovery URL')).toHaveProperty('value', applicationUrl)
   expect(cards).toHaveLength(0)
   await user.type(within(dialog).getByLabelText('Role title'), 'Software Intern')
   await user.type(within(dialog).getByLabelText('Company'), 'Example Co')
@@ -234,7 +263,7 @@ it('opens LinkedIn Jobs from Find and reviews a pasted posting before saving', a
   expect(within(saved).getByRole('heading', { name: 'Software Intern' })).not.toBeNull()
 
   await user.click(screen.getByRole('button', { name: 'Find' }))
-  await user.type(screen.getByLabelText('Posting link'), postingUrl)
+  await user.type(screen.getByLabelText('Posting link'), applicationUrl)
   await user.click(screen.getByRole('button', { name: 'Review for board' }))
   const duplicateDialog = screen.getByRole('dialog')
   await user.type(within(duplicateDialog).getByLabelText('Role title'), 'Another Intern')
@@ -247,7 +276,7 @@ it('opens LinkedIn Jobs from Find and reviews a pasted posting before saving', a
 
 it('prefills Greenhouse details for review while keeping the pasted application URL', async () => {
   const user = userEvent.setup()
-  const postingUrl = 'https://job-boards.greenhouse.io/example/jobs/12345?gh_src=linkedin'
+  const applicationUrl = 'https://job-boards.greenhouse.io/example/jobs/12345?gh_src=linkedin'
   let saved: Opportunity | null = null
   const fetchMock = vi.fn(async (path: string, options?: RequestInit) => {
     if (path.startsWith('/api/posting-preview?')) return reply(200, { status: 'found', title: 'Software Intern', company: 'Example Co' })
@@ -261,19 +290,19 @@ it('prefills Greenhouse details for review while keeping the pasted application 
 
   render(<App />)
   await user.click(screen.getByRole('button', { name: 'Find' }))
-  await user.type(screen.getByLabelText('Posting link'), postingUrl)
+  await user.type(screen.getByLabelText('Posting link'), applicationUrl)
   await user.click(screen.getByRole('button', { name: 'Review for board' }))
   const dialog = await screen.findByRole('dialog')
   expect(within(dialog).getByLabelText('Role title')).toHaveProperty('value', 'Software Intern')
   expect(within(dialog).getByLabelText('Company')).toHaveProperty('value', 'Example Co')
-  expect(within(dialog).getByLabelText('Posting URL')).toHaveProperty('value', postingUrl)
+  expect(within(dialog).getByLabelText('Application URL')).toHaveProperty('value', applicationUrl)
   expect(saved).toBeNull()
   await user.clear(within(dialog).getByLabelText('Role title'))
   await user.type(within(dialog).getByLabelText('Role title'), 'Platform Intern')
   await user.click(within(dialog).getByRole('button', { name: 'Add opportunity' }))
   expect(await screen.findByRole('heading', { name: 'Platform Intern' })).not.toBeNull()
-  expect(saved).toMatchObject({ title: 'Platform Intern', company: 'Example Co', postingUrl })
-  expect(fetchMock).toHaveBeenCalledWith(`/api/posting-preview?url=${encodeURIComponent(postingUrl)}`, undefined)
+  expect(saved).toMatchObject({ title: 'Platform Intern', company: 'Example Co', applicationUrl })
+  expect(fetchMock).toHaveBeenCalledWith(`/api/posting-preview?url=${encodeURIComponent(applicationUrl)}`, undefined)
 })
 
 it('allows manual entry when Greenhouse lookup fails', async () => {
@@ -296,14 +325,14 @@ it('allows manual entry when Greenhouse lookup fails', async () => {
 it('edits a card and shows the existing card on a duplicate URL', async () => {
   const user = userEvent.setup()
   const cards: Opportunity[] = [
-    { id: 1, title: 'Software Intern', company: 'Example Co', postingUrl: 'https://example.com/one', stage: 'APPLIED' },
-    { id: 2, title: 'Research Intern', company: 'Other Co', postingUrl: 'https://example.com/two', stage: 'SAVED' },
+    { id: 1, title: 'Software Intern', company: 'Example Co', applicationUrl: 'https://example.com/one', stage: 'APPLIED' },
+    { id: 2, title: 'Research Intern', company: 'Other Co', applicationUrl: 'https://example.com/two', stage: 'SAVED' },
   ]
   const fetchMock = vi.fn(async (_path: string, options?: RequestInit) => {
     if (!options?.method) return reply(200, cards)
     if (options.method === 'PATCH') {
       const updated = JSON.parse(String(options.body))
-      const duplicate = cards.find((card) => card.id !== 1 && card.postingUrl === updated.postingUrl)
+      const duplicate = cards.find((card) => card.id !== 1 && card.applicationUrl === updated.applicationUrl)
       if (duplicate) return reply(409, { code: 'DUPLICATE_POSTING_URL', existing: duplicate })
       Object.assign(cards[0], updated)
       return reply(200, cards[0])
@@ -325,18 +354,18 @@ it('edits a card and shows the existing card on a duplicate URL', async () => {
 
   await user.click(screen.getByRole('button', { name: 'Edit Platform Intern' }))
   dialog = screen.getByRole('dialog')
-  await user.clear(within(dialog).getByLabelText('Posting URL'))
-  await user.type(within(dialog).getByLabelText('Posting URL'), 'https://example.com/two')
+  await user.clear(within(dialog).getByLabelText('Application URL'))
+  await user.type(within(dialog).getByLabelText('Application URL'), 'https://example.com/two')
   await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
   expect(await within(dialog).findByText('Already on your board')).not.toBeNull()
-  expect(cards[0].postingUrl).toBe('https://example.com/one')
+  expect(cards[0].applicationUrl).toBe('https://example.com/one')
 })
 
 it('confirms deletion, remembers the choice, and lets the user restore confirmations', async () => {
   const user = userEvent.setup()
   let cards: Opportunity[] = [
-    { id: 1, title: 'First Intern', company: 'Example Co', postingUrl: 'https://example.com/one', stage: 'SAVED' },
-    { id: 2, title: 'Second Intern', company: 'Other Co', postingUrl: 'https://example.com/two', stage: 'APPLIED' },
+    { id: 1, title: 'First Intern', company: 'Example Co', applicationUrl: 'https://example.com/one', stage: 'SAVED' },
+    { id: 2, title: 'Second Intern', company: 'Other Co', applicationUrl: 'https://example.com/two', stage: 'APPLIED' },
   ]
   const fetchMock = vi.fn(async (path: string, options?: RequestInit) => {
     if (!options?.method) return reply(200, cards)
