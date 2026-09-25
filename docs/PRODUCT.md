@@ -38,6 +38,7 @@ The first usable version runs locally with a separately configured Spring Boot s
 - Use a global keyboard shortcut and quick-add overlay.
 - Add keyboard shortcuts for common board actions. Eventually provide a Settings screen where the user can view and customize shortcuts; defaults, conflict handling, and accessibility need later design.
 - Extend browser integration to more browsers and distribute the Chrome extension through the Web Store.
+- Explore a less interruptive browser flow: on supported application pages, offer an optional on-page **Save to Hub** action after site access is granted. Let users collect several candidate postings in a review inbox, then open Internship Hub once to edit, approve, or discard each one. Define where drafts live, how long they remain, and how duplicate links are handled before implementation.
 - Expand Find to other job boards over time. Reconsider embedding LinkedIn only if opening the normal browser feels awkward, after checking feasibility and security.
 - Browse internship postings from the app and choose an "Add to list" action that fills in available details such as title, company, and posting URL for review before saving. The source of postings and how details are extracted need later planning.
 - Improve Find so a supported posting source can prefill company and job title as well as its link, with the user reviewing all fields before saving. Keep manual entry available when details cannot be obtained; investigate source permissions and reliability before implementing automatic extraction.
