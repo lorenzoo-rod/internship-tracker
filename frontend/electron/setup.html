@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'">
+  <title>Set up Internship Hub</title>
+  <link rel="stylesheet" href="setup.css">
+</head>
+<body>
+  <main>
+    <h1>Connect your local database</h1>
+    <p>PostgreSQL should be installed and running as a Windows service. Enter the PostgreSQL administrator password chosen during setup. Internship Hub will create its database if it is absent.</p>
+    <form id="setup-form">
+      <label>PostgreSQL administrator password <input id="admin-password" type="password" required autocomplete="off"></label>
+      <label>Existing Internship Hub database password <span>(only if you already have an <code>internship_hub</code> database and its password file is missing)</span><input id="existing-password" type="password" autocomplete="off"></label>
+      <button type="submit">Connect database</button>
+    </form>
+    <p id="result" role="status"></p>
+    <p>Existing databases and cards are preserved. The app database and credentials remain after uninstall.</p>
+  </main>
+  <script src="setup.js"></script>
+</body>
+</html>

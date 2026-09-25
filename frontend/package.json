@@ -4,7 +4,7 @@
   "description": "A local desktop board for internship opportunities and applications",
   "author": "Internship Hub",
   "private": true,
-  "version": "0.1.3",
+  "version": "0.1.10",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -14,7 +14,8 @@
     "test:desktop": "node --test electron/*.test.cjs",
     "preview": "vite preview",
     "desktop": "npm run build && electron .",
-    "make": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-package.ps1"
+    "make": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prepare-package.ps1",
+    "make:fresh": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/make-fresh-installer.ps1"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",

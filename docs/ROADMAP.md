@@ -63,25 +63,64 @@ Version 0.1.2 is installed on the current PC. Before adding permanent deletion, 
 - [x] Show the backup's destination and result clearly; verify the archive and test restoring it into a separate database.
 - [x] Keep the in-app restore experience and any scheduled backups as separate future work.
 
-Version 0.1.3 is installed on the current PC. The backup code created and checked an archive of the live database, then that archive was restored into a separate temporary PostgreSQL 17 server with the same three-card count. The temporary server was stopped and removed. The installed renderer showed the backup button and its Electron bridge, and the normal shortcut reopened with the existing cards. Backups still need to be initiated by the user; a fuller settings window, in-app restore, scheduled backups, and recoverable Trash remain later work.
+Version 0.1.3 was installed on the current PC. The backup code created and checked an archive of the live database, then that archive was restored into a separate temporary PostgreSQL 17 server with the same three-card count. The temporary server was stopped and removed. The installed renderer showed the backup button and its Electron bridge, and the normal shortcut reopened with the existing cards. Backups still need to be initiated by the user; a fuller settings window, in-app restore, scheduled backups, and recoverable Trash remain later work.
 
 ## Milestone 6 — Fresh Windows PC installer
 
-- [ ] Choose how one installer sets up PostgreSQL, the app database and credentials, and any required Java runtime on a new Windows PC.
-- [ ] Install the desktop app and local services without repository tools or manual database setup.
-- [ ] Verify a clean install, reopening existing data, backup and restore, and an update that preserves the database.
+- [x] Choose an administrator-approved PostgreSQL Windows service, app database setup on first launch, and one offline installer that includes PostgreSQL and the bundled Java runtime.
+- [x] Build the installer and first-run database setup so the desktop app and local services can be installed without repository tools or manual database commands.
+- [ ] Verify the full installer on a genuinely fresh Windows PC, including first launch, reopen/persistence, backup and restore, update, and uninstall data retention.
 
-This follows the current-PC launch so its API startup and packaging behavior can be proven before adding database provisioning.
+Version 0.1.4 was installed as an update on the current PC through the offline wrapper. An isolated PostgreSQL server test verified fresh app-role/database provisioning, API card creation, reuse after restart, backup, and restore. A live database backup using registry-discovered PostgreSQL tools restored three cards into an isolated server. The current-PC app uninstall and reinstall left its three cards, credential, PostgreSQL service, and existing backup intact. A genuinely fresh Windows PC or VM is still needed to verify the PostgreSQL service installation path end to end.
 
-## Product discussions after the launch workflow
+The clean-Windows verification is deferred while development focuses on features for the current laptop. A Windows 11 VM attempt reached 11% of OS installation but progressed too slowly to reach the app installer; no fresh-PC app install has been verified. Resume this check before relying on or distributing the fresh-PC setup package.
 
-- [ ] Discuss which product workflow to build next, including search and filtering and the application-materials area described in `PRODUCT.md`.
-- [ ] Plan the posting-browse workflow: where postings appear, how "Add to list" obtains available title/company/URL details, and how the user reviews them before saving.
+## Finding workflow — in progress
+
+- [x] Add a Find entry that opens LinkedIn Jobs in the normal browser.
+- [x] Let the user paste a LinkedIn posting link into the existing review-and-save form without scraping LinkedIn.
+- [ ] Choose the first posting source and scope, then display current internship postings in the app.
+- [ ] Let the user open a posting and choose **Add to list**. Prefill title, company, and posting URL for review before saving a card in `SAVED`.
+- [ ] Autofill company and job title from supported posting sources when available, while keeping every field reviewable and manual entry available. Decide source-specific extraction and permissions first; LinkedIn link paste currently fills only the URL.
+- [x] Reuse the existing duplicate-URL response in the pasted-link flow to show an already saved card instead of creating a duplicate.
+- [ ] Test source failures, posting display, prefilling, and saving without changing existing cards.
+
+Version 0.1.6 adds Find and the manual link review flow on the current laptop. LinkedIn Jobs is the first navigation source; the user searches for software and tech internships there. Other job boards and any in-app listing feeds require separate source choices. Broader discovery and recommendations remain later work.
+
+Plan a second way to add postings from supported company career sites in the user's normal browser, using the same review-and-save flow. The user can start from LinkedIn or Handshake, follow Apply Externally to the company's application page, and use an explicit browser **Add to saved** action there. Keep LinkedIn and Handshake capture user-driven rather than relying on scraping those job boards. [Handshake documents the external-apply handoff](https://support.joinhandshake.com/hc/en-us/articles/360043604173-Jobs-Apply-Externally); its [terms restrict bulk scraping](https://joinhandshake.com/legal/tos/). Keep separate discovery, direct application, and optional status links on a card: **Apply** opens the direct application page; after submitting, the user can mark the card `APPLIED` and record a status link if the employer provides one. Browser handoff and any automatic status-link capture need further design before implementation.
+
+## Focused board and desktop startup screen — complete
+
+- [x] Click a Kanban column to toggle focus. Expand the selected column within the board and reduce the others to labeled tabs with stage counts; switching tabs changes focus, and Escape or **Show full board** returns to the full board.
+- [x] Verify switching focus, keyboard access, card movement, and layouts with both empty and crowded stages.
+- [x] Replace Electron's plain "Starting Internship Hub…" placeholder with a centered computer-screen icon and “Booting Internship Hub” across its screen.
+- [x] Use a restrained startup animation while the packaged API becomes ready, then show the board. Keep startup errors and retry available, and respect reduced-motion settings.
+- [x] Verify the screen during normal launch, a slow API launch, and startup failure. This is a desktop presentation change; it does not alter the board's separate data-loading state.
+
+Version 0.1.8 is installed on the current PC. The frontend build, nine board tests, and seventeen Electron tests pass. Electron Forge packaged the app with the startup HTML/CSS. Board tests cover column-click focus, Escape, keyboard activation, dialog behavior, stage-menu movement, and dropping on a collapsed tab. Hidden Electron captures confirmed the startup screen and a focused board with fifteen cards in one stage. Startup orchestration tests cover normal readiness, a slow API, and failure followed by Retry. The installed app reopened with the PostgreSQL database still holding five cards, and the user confirmed the updated focus interaction works. A verified backup was saved before the preceding update.
+
+## Next priority — Find, search, and add
+
+- [x] Choose the first slice: prefill the review form's company and title when the user pastes a supported posting link.
+- [x] Choose Greenhouse-hosted application links as the first autofill source. Its [public Job Board API](https://docs.greenhouse.io/job-board.html) supplies published job details without authentication. LinkedIn links keep manual entry because [LinkedIn restricts scraping and automated browser tools](https://www.linkedin.com/help/linkedin/answer/a1341387).
+- [x] Support Greenhouse-hosted job links on `boards.greenhouse.io` and `job-boards.greenhouse.io`; map the public Job Board API's title and company name while preserving the URL the user pasted.
+- [x] For a supported link, fetch available details, prefill the existing review form, and let the user correct every field before saving. Keep manual entry when a link is unsupported or lookup fails, and preserve duplicate-card feedback.
+- [x] Test successful prefilling, unsupported links, lookup failures, editing before save, and duplicate URLs without changing existing cards.
+
+Version 0.1.9 adds the Greenhouse preview endpoint and Find review flow. The preview request calls only the fixed Greenhouse Job Board API for recognized hosted job URLs; unsupported or unavailable details leave the review form open for manual entry. The pasted URL remains the card's single posting URL. Backend, board, desktop bridge, and frontend build checks passed. The current-PC installer was built and installed over 0.1.8 after a verified database backup. The installed API reopened with six existing cards and returned title and company from a live public Greenhouse job. The browser **Add to saved** workflow and three-link card model remain later work.
+
+Version 0.1.10 adds a MyGreenhouse Jobs link to the Find browse panel. It opens Greenhouse's candidate portal in the normal browser; the user may need to sign in, and only participating employers' roles appear. This navigation does not import MyGreenhouse listings into Internship Hub. The user can open a company's Greenhouse-hosted job page and paste that direct link into the existing review flow. The current-PC installer was built and installed; the installed API reopened with six existing cards, and the installed UI bundle matched the tested build.
+
+After pasted-link autofill, add an explicit browser **Add to saved** action for company application pages. A Chrome extension can get the current tab's URL and title when the user invokes it using temporary [`activeTab` access](https://developer.chrome.com/docs/extensions/develop/concepts/activeTab); choose and secure the browser-to-desktop handoff before implementation. Review all inferred fields and allow manual edits. Extend the card model to keep the discovery URL, direct application URL, and optional status URL separately, and migrate existing single-URL cards safely. Search and filtering of saved cards and searchable in-app listings remain later steps in this priority area. Customizable columns and the broader application-materials area follow.
+
+For that card-model step, show every link in the pencil detail form. Feature the application link on `SAVED` card previews and the status link on later-stage previews when available. Decide missing-link fallback and migrate the existing single-URL cards without losing their URLs. Block duplicate discovery or application URLs across cards, including cross-field matches; warn but allow a shared status URL. For the browser step, capture the active company application URL, offer editable title/company suggestions when available, and create the card in `SAVED` only after review. The browser-to-desktop handoff still needs a secure design before implementation.
 
 ## Later milestones
 
+- Customizable board columns: design persistent stage identities and ordering, then let the user add, rename, recolor, and delete columns. Decide how new cards get a default stage and what happens to cards in a deleted column before implementation. Migrate existing cards safely and test the API, focused board, and backup/restore with custom stages.
 - Search and filtering.
 - Global shortcut, quick-add overlay, and system tray.
+- Keyboard shortcuts for common board actions, then a Settings screen for viewing and customizing them. Plan defaults, shortcut conflicts, and accessible alternatives before implementation.
 - Browser integration.
 - Browse internship postings in or from the app and add a selected posting with available details prefilled for review.
 - Automatic discovery and recommendations.

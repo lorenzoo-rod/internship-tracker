@@ -1,0 +1,20 @@
+:root { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #243f38; background: #f7f5ef; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; }
+.startup { min-height: 100vh; padding: 32px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.monitor { width: min(380px, 78vw); filter: drop-shadow(0 20px 22px rgba(26, 56, 43, .12)); }
+.monitor-screen { position: relative; height: 225px; padding: 26px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; border: 12px solid #25483e; border-bottom-width: 20px; border-radius: 19px; background: linear-gradient(145deg, #e7f1e6, #fcfdf6); }
+.screen-light { position: absolute; inset: -70% auto auto -35%; width: 80%; height: 180%; transform: rotate(29deg); background: rgba(255, 255, 255, .28); }
+.screen-line { position: absolute; inset: 0 auto 0 -45%; width: 36%; transform: skewX(-20deg); background: rgba(104, 171, 131, .12); animation: scan 3.2s ease-in-out infinite; }
+.monitor-wordmark { position: relative; margin-bottom: 12px; color: #214e45; font-size: 23px; font-weight: 800; letter-spacing: -.09em; }
+.monitor-wordmark span { color: #8ab77e; }
+.monitor-message { position: relative; color: #214e45; font-size: clamp(21px, 4vw, 30px); font-weight: 760; letter-spacing: -.05em; line-height: 1.12; }
+.monitor-neck { width: 49px; height: 27px; margin: auto; background: #25483e; }
+.monitor-base { width: 138px; height: 12px; margin: auto; border-radius: 9px 9px 5px 5px; background: #25483e; }
+h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+p { margin: 29px 0 16px; color: #748278; font-size: 14px; font-weight: 600; }
+.progress { width: 140px; height: 4px; overflow: hidden; border-radius: 4px; background: #dfe9dc; }
+.progress span { display: block; width: 40%; height: 100%; border-radius: inherit; background: #65a47d; animation: progress 2s ease-in-out infinite alternate; }
+@keyframes scan { from { left: -45%; } to { left: 120%; } }
+@keyframes progress { from { transform: translateX(0); } to { transform: translateX(150%); } }
+@media (prefers-reduced-motion: reduce) { .screen-line, .progress span { animation: none; } .screen-line { display: none; } .progress span { width: 100%; } }

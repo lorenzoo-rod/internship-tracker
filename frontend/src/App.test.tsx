@@ -36,6 +36,80 @@ it('loads the board and shows saved opportunities in their stage', async () => {
   expect(screen.getByText('example.com')).not.toBeNull()
 })
 
+it('focuses a stage, switches through counted tabs, moves cards, and returns to the full board', async () => {
+  const user = userEvent.setup()
+  let cards: Opportunity[] = [
+    { id: 1, title: 'Software Intern', company: 'Example Co', postingUrl: 'https://example.com/one', stage: 'SAVED' },
+    { id: 2, title: 'Research Intern', company: 'Other Co', postingUrl: 'https://example.com/two', stage: 'APPLIED' },
+  ]
+  vi.stubGlobal('fetch', vi.fn(async (_path: string, options?: RequestInit) => {
+    if (!options?.method) return reply(200, cards)
+    if (options.method === 'PATCH') {
+      const { stage } = JSON.parse(String(options.body))
+      cards = cards.map((card) => card.id === 1 ? { ...card, stage } : card)
+      return reply(200, cards[0])
+    }
+    throw new Error('Unexpected request')
+  }))
+
+  render(<App />)
+  const saved = await screen.findByRole('region', { name: 'Saved stage' })
+  await user.click(saved)
+  expect(saved.classList.contains('board-column-focused')).toBe(true)
+  expect(screen.queryByRole('button', { name: 'Focus Saved stage' })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Focus Applied stage, 1 card' })).not.toBeNull()
+  expect(within(saved).getByRole('heading', { name: 'Software Intern' })).not.toBeNull()
+  expect(screen.queryByRole('heading', { name: 'Research Intern' })).toBeNull()
+
+  await user.selectOptions(within(saved).getByRole('combobox', { name: 'Move to' }), 'INTERVIEWING')
+  expect(await screen.findByRole('button', { name: 'Focus Interviewing stage, 1 card' })).not.toBeNull()
+  await user.click(screen.getByRole('button', { name: 'Focus Interviewing stage, 1 card' }))
+  const interviewing = screen.getByRole('region', { name: 'Interviewing stage' })
+  expect(within(interviewing).getByRole('heading', { name: 'Software Intern' })).not.toBeNull()
+  const data = new Map<string, string>()
+  const dataTransfer = {
+    setData: (type: string, value: string) => data.set(type, value),
+    getData: (type: string) => data.get(type) ?? '',
+    effectAllowed: 'move',
+  }
+  fireEvent.dragStart(within(interviewing).getByRole('article'), { dataTransfer })
+  const savedTab = screen.getByRole('region', { name: 'Saved stage' })
+  fireEvent.dragOver(savedTab, { dataTransfer })
+  fireEvent.drop(savedTab, { dataTransfer })
+  const countedSavedTab = await screen.findByRole('button', { name: 'Focus Saved stage, 1 card' })
+  countedSavedTab.focus()
+  await user.keyboard('{Enter}')
+  expect(within(savedTab).getByRole('heading', { name: 'Software Intern' })).not.toBeNull()
+  await user.click(screen.getByRole('button', { name: 'Show full board' }))
+  expect(screen.getByRole('heading', { name: 'Research Intern' })).not.toBeNull()
+  saved.focus()
+  await user.keyboard('{Enter}')
+  expect(saved.classList.contains('board-column-focused')).toBe(true)
+  await user.keyboard('{Escape}')
+  expect(saved.classList.contains('board-column-focused')).toBe(false)
+})
+
+it('keeps card controls independent of column focus and gives Escape to an open dialog first', async () => {
+  const user = userEvent.setup()
+  const existing: Opportunity = { id: 1, title: 'Software Intern', company: 'Example Co', postingUrl: 'https://example.com/one', stage: 'SAVED' }
+  vi.stubGlobal('fetch', vi.fn(async () => reply(200, [existing])))
+
+  render(<App />)
+  const saved = await screen.findByRole('region', { name: 'Saved stage' })
+  await user.click(saved)
+  await user.click(within(saved).getByRole('button', { name: 'Edit Software Intern' }))
+  expect(screen.getByRole('dialog')).not.toBeNull()
+  expect(saved.classList.contains('board-column-focused')).toBe(true)
+  await user.keyboard('{Escape}')
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(saved.classList.contains('board-column-focused')).toBe(true)
+  await user.click(within(saved).getByRole('heading', { name: 'Saved' }))
+  expect(saved.classList.contains('board-column-focused')).toBe(false)
+  saved.focus()
+  await user.keyboard(' ')
+  expect(saved.classList.contains('board-column-focused')).toBe(true)
+})
+
 it('uses the Electron bridge when the desktop shell provides it', async () => {
   const existing: Opportunity = {
     id: 4,
@@ -119,6 +193,104 @@ it('adds a card, moves it, and shows the existing card on duplicate save', async
   fireEvent.dragOver(interviewing, { dataTransfer })
   fireEvent.drop(interviewing, { dataTransfer })
   expect(await within(interviewing).findByRole('heading', { name: 'Software Intern' })).not.toBeNull()
+})
+
+it('opens LinkedIn Jobs from Find and reviews a pasted posting before saving', async () => {
+  const user = userEvent.setup()
+  const postingUrl = 'https://www.linkedin.com/jobs/view/12345/'
+  let cards: Opportunity[] = []
+  const fetchMock = vi.fn(async (_path: string, options?: RequestInit) => {
+    if (!options?.method) return reply(200, cards)
+    if (options.method === 'POST') {
+      const submitted = JSON.parse(String(options.body))
+      const existing = cards.find((card) => card.postingUrl === submitted.postingUrl)
+      if (existing) return reply(409, { code: 'DUPLICATE_POSTING_URL', existing })
+      const created: Opportunity = { ...submitted, id: 1, stage: 'SAVED' }
+      cards = [created]
+      return reply(201, created)
+    }
+    throw new Error('Unexpected request')
+  })
+  vi.stubGlobal('fetch', fetchMock)
+
+  render(<App />)
+  await user.click(screen.getByRole('button', { name: 'Find' }))
+  const linkedin = screen.getByRole('link', { name: /Browse LinkedIn Jobs/ })
+  expect(linkedin.getAttribute('href')).toBe('https://www.linkedin.com/jobs/')
+  expect(linkedin.getAttribute('target')).toBe('_blank')
+  const greenhouse = screen.getByRole('link', { name: /Browse MyGreenhouse Jobs/ })
+  expect(greenhouse.getAttribute('href')).toBe('https://my.greenhouse.io/')
+  expect(greenhouse.getAttribute('target')).toBe('_blank')
+
+  await user.type(screen.getByLabelText('Posting link'), postingUrl)
+  await user.click(screen.getByRole('button', { name: 'Review for board' }))
+  const dialog = screen.getByRole('dialog')
+  expect(within(dialog).getByLabelText('Posting URL')).toHaveProperty('value', postingUrl)
+  expect(cards).toHaveLength(0)
+  await user.type(within(dialog).getByLabelText('Role title'), 'Software Intern')
+  await user.type(within(dialog).getByLabelText('Company'), 'Example Co')
+  await user.click(within(dialog).getByRole('button', { name: 'Add opportunity' }))
+  const saved = await screen.findByRole('region', { name: 'Saved stage' })
+  expect(within(saved).getByRole('heading', { name: 'Software Intern' })).not.toBeNull()
+
+  await user.click(screen.getByRole('button', { name: 'Find' }))
+  await user.type(screen.getByLabelText('Posting link'), postingUrl)
+  await user.click(screen.getByRole('button', { name: 'Review for board' }))
+  const duplicateDialog = screen.getByRole('dialog')
+  await user.type(within(duplicateDialog).getByLabelText('Role title'), 'Another Intern')
+  await user.type(within(duplicateDialog).getByLabelText('Company'), 'Example Co')
+  await user.click(within(duplicateDialog).getByRole('button', { name: 'Add opportunity' }))
+  expect(await within(duplicateDialog).findByText('Already on your board')).not.toBeNull()
+  expect(cards).toHaveLength(1)
+  expect(fetchMock.mock.calls.some(([path]) => String(path).startsWith('/api/posting-preview?'))).toBe(false)
+})
+
+it('prefills Greenhouse details for review while keeping the pasted application URL', async () => {
+  const user = userEvent.setup()
+  const postingUrl = 'https://job-boards.greenhouse.io/example/jobs/12345?gh_src=linkedin'
+  let saved: Opportunity | null = null
+  const fetchMock = vi.fn(async (path: string, options?: RequestInit) => {
+    if (path.startsWith('/api/posting-preview?')) return reply(200, { status: 'found', title: 'Software Intern', company: 'Example Co' })
+    if (options?.method === 'POST') {
+      saved = { ...JSON.parse(String(options.body)), id: 1, stage: 'SAVED' }
+      return reply(201, saved)
+    }
+    return reply(200, [])
+  })
+  vi.stubGlobal('fetch', fetchMock)
+
+  render(<App />)
+  await user.click(screen.getByRole('button', { name: 'Find' }))
+  await user.type(screen.getByLabelText('Posting link'), postingUrl)
+  await user.click(screen.getByRole('button', { name: 'Review for board' }))
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByLabelText('Role title')).toHaveProperty('value', 'Software Intern')
+  expect(within(dialog).getByLabelText('Company')).toHaveProperty('value', 'Example Co')
+  expect(within(dialog).getByLabelText('Posting URL')).toHaveProperty('value', postingUrl)
+  expect(saved).toBeNull()
+  await user.clear(within(dialog).getByLabelText('Role title'))
+  await user.type(within(dialog).getByLabelText('Role title'), 'Platform Intern')
+  await user.click(within(dialog).getByRole('button', { name: 'Add opportunity' }))
+  expect(await screen.findByRole('heading', { name: 'Platform Intern' })).not.toBeNull()
+  expect(saved).toMatchObject({ title: 'Platform Intern', company: 'Example Co', postingUrl })
+  expect(fetchMock).toHaveBeenCalledWith(`/api/posting-preview?url=${encodeURIComponent(postingUrl)}`, undefined)
+})
+
+it('allows manual entry when Greenhouse lookup fails', async () => {
+  const user = userEvent.setup()
+  vi.stubGlobal('fetch', vi.fn(async (path: string) => {
+    if (path.startsWith('/api/posting-preview?')) throw new Error('Offline')
+    return reply(200, [])
+  }))
+
+  render(<App />)
+  await user.click(screen.getByRole('button', { name: 'Find' }))
+  await user.type(screen.getByLabelText('Posting link'), 'https://boards.greenhouse.io/example/jobs/123')
+  await user.click(screen.getByRole('button', { name: 'Review for board' }))
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByText(/Could not look up this posting/)).not.toBeNull()
+  expect(within(dialog).getByLabelText('Role title')).toHaveProperty('value', '')
+  expect(within(dialog).getByLabelText('Company')).toHaveProperty('value', '')
 })
 
 it('edits a card and shows the existing card on a duplicate URL', async () => {

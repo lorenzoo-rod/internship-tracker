@@ -2,6 +2,7 @@ const { spawn } = require('node:child_process')
 const { randomUUID } = require('node:crypto')
 const fs = require('node:fs')
 const path = require('node:path')
+const { installedPostgresBin } = require('./postgres-tools.cjs')
 
 function runTool(executable, args, env, spawnProcess) {
   return new Promise((resolve, reject) => {
@@ -28,10 +29,11 @@ function isInside(candidate, directory) {
 async function createBackup({
   destination,
   localAppData = process.env.LOCALAPPDATA,
-  postgresBin = path.join(process.env.ProgramFiles || 'C:\\Program Files', 'PostgreSQL', '17', 'bin'),
+  postgresBin,
   fileSystem = fs,
   spawnProcess = spawn,
   temporaryId = randomUUID(),
+  port = 5432,
 }) {
   if (!localAppData || typeof destination !== 'string' || !path.isAbsolute(destination)) {
     throw new Error('Choose a full path for the backup file.')
@@ -43,8 +45,9 @@ async function createBackup({
     throw new Error('That backup file already exists. Choose a new filename to keep the existing backup.')
   }
 
-  const pgDump = path.join(postgresBin, 'pg_dump.exe')
-  const pgRestore = path.join(postgresBin, 'pg_restore.exe')
+  const toolsBin = postgresBin || installedPostgresBin({ fileSystem })
+  const pgDump = path.join(toolsBin, 'pg_dump.exe')
+  const pgRestore = path.join(toolsBin, 'pg_restore.exe')
   const passwordFile = path.join(localAppData, 'InternshipHubData', 'secrets', 'db-password.secret')
   if (!fileSystem.existsSync(pgDump) || !fileSystem.existsSync(pgRestore)) {
     throw new Error('PostgreSQL backup tools were not found. Check the PostgreSQL 17 installation on this PC.')
@@ -58,7 +61,7 @@ async function createBackup({
   const temporary = path.join(path.dirname(destination), `.${path.basename(destination)}.${temporaryId}.partial`)
   try {
     await runTool(pgDump, [
-      '--format=custom', '--no-password', '--host=127.0.0.1',
+      '--format=custom', '--no-password', '--host=127.0.0.1', `--port=${port}`,
       '--username=internship_hub', '--dbname=internship_hub', `--file=${temporary}`,
     ], { ...process.env, PGPASSWORD: password, PGCONNECT_TIMEOUT: '10' }, spawnProcess)
 

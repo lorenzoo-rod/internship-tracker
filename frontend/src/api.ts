@@ -12,6 +12,8 @@ export type Opportunity = {
 
 export type NewOpportunity = Pick<Opportunity, 'title' | 'company' | 'postingUrl'>
 
+export type PostingPreview = { status: 'found' | 'unsupported' | 'unavailable'; title: string | null; company: string | null }
+
 export class DuplicateOpportunityError extends Error {
   constructor(public existing: Opportunity) {
     super('This posting is already on your board.')
@@ -27,10 +29,9 @@ declare global {
   }
 }
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
+async function request<T>(fullPath: string, options?: RequestInit): Promise<T> {
   let status: number
   let body: unknown
-  const fullPath = `/api/opportunities${path}`
   try {
     if (window.trackerApi) {
       const result = await window.trackerApi.request(
@@ -66,11 +67,11 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 const jsonHeaders = { 'Content-Type': 'application/json' }
 
 export function listOpportunities(): Promise<Opportunity[]> {
-  return request<Opportunity[]>('')
+  return request<Opportunity[]>('/api/opportunities')
 }
 
 export function createOpportunity(opportunity: NewOpportunity): Promise<Opportunity> {
-  return request<Opportunity>('', {
+  return request<Opportunity>('/api/opportunities', {
     method: 'POST',
     headers: jsonHeaders,
     body: JSON.stringify(opportunity),
@@ -78,7 +79,7 @@ export function createOpportunity(opportunity: NewOpportunity): Promise<Opportun
 }
 
 export function updateStage(id: number, stage: Stage): Promise<Opportunity> {
-  return request<Opportunity>(`/${id}/stage`, {
+  return request<Opportunity>(`/api/opportunities/${id}/stage`, {
     method: 'PATCH',
     headers: jsonHeaders,
     body: JSON.stringify({ stage }),
@@ -86,7 +87,7 @@ export function updateStage(id: number, stage: Stage): Promise<Opportunity> {
 }
 
 export function updateOpportunity(id: number, opportunity: NewOpportunity): Promise<Opportunity> {
-  return request<Opportunity>(`/${id}`, {
+  return request<Opportunity>(`/api/opportunities/${id}`, {
     method: 'PATCH',
     headers: jsonHeaders,
     body: JSON.stringify(opportunity),
@@ -94,5 +95,9 @@ export function updateOpportunity(id: number, opportunity: NewOpportunity): Prom
 }
 
 export function deleteOpportunity(id: number): Promise<void> {
-  return request<void>(`/${id}`, { method: 'DELETE' })
+  return request<void>(`/api/opportunities/${id}`, { method: 'DELETE' })
+}
+
+export function previewPosting(url: string): Promise<PostingPreview> {
+  return request<PostingPreview>(`/api/posting-preview?url=${encodeURIComponent(url)}`)
 }

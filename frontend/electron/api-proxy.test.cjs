@@ -28,13 +28,16 @@ test('forwards only the tracker API methods and paths', async () => {
   assert.equal(calls[3].options.body, undefined)
   assert.equal(calls[3].options.headers, undefined)
 
+  await forwardTrackerRequest({ path: '/api/posting-preview?url=https%3A%2F%2Fboards.greenhouse.io%2Fexample%2Fjobs%2F123', method: 'GET' }, fetcher)
+  assert.match(calls[4].url, /\/api\/posting-preview\?url=/)
   await assert.rejects(() => forwardTrackerRequest({ path: 'https://example.com', method: 'GET' }, fetcher))
+  await assert.rejects(() => forwardTrackerRequest({ path: '/api/posting-preview?url=x&other=y', method: 'GET' }, fetcher))
   await assert.rejects(() => forwardTrackerRequest({ path: '/api/opportunities/1', method: 'DELETE', body: '{}' }, fetcher))
   await assert.rejects(() => forwardTrackerRequest({ path: '/api/opportunities/1/stage', method: 'PATCH' }, fetcher))
-  assert.equal(calls.length, 4)
+  assert.equal(calls.length, 5)
 })
 
-test('preload exposes only the tracker request and backup bridge', async () => {
+test('preload exposes only the tracker request, backup, and setup bridge', async () => {
   let exposed
   let invoked
   const electron = {
@@ -45,11 +48,15 @@ test('preload exposes only the tracker request and backup bridge', async () => {
   vm.runInNewContext(preload, { require: () => electron })
 
   assert.equal(exposed.name, 'trackerApi')
-  assert.deepEqual(Object.keys(exposed.api), ['request', 'backup'])
+  assert.deepEqual(Object.keys(exposed.api), ['request', 'backup', 'setupDatabase'])
   await exposed.api.request('/api/opportunities', 'GET', null)
   assert.equal(invoked.channel, 'tracker:request')
   assert.equal(invoked.request.path, '/api/opportunities')
   assert.equal(invoked.request.method, 'GET')
   await exposed.api.backup()
   assert.equal(invoked.channel, 'tracker:backup')
+  await exposed.api.setupDatabase('admin', 'existing')
+  assert.equal(invoked.channel, 'tracker:setup-database')
+  assert.equal(invoked.request.adminPassword, 'admin')
+  assert.equal(invoked.request.existingPassword, 'existing')
 })

@@ -3,6 +3,8 @@ const path = require('node:path')
 const { startPackagedBackend } = require('./backend-launcher.cjs')
 const { forwardTrackerRequest } = require('./api-proxy.cjs')
 const { createBackup } = require('./backup.cjs')
+const { provisionDatabase, secretPath } = require('./database-setup.cjs')
+const fs = require('node:fs')
 const squirrelStartup = require('electron-squirrel-startup')
 
 let mainWindow
@@ -10,6 +12,7 @@ let backend
 let apiBase = 'http://127.0.0.1:8080'
 let quitting = false
 let backupInProgress = false
+let setupMode = false
 
 function isAppWindow(event) {
   return mainWindow && event.sender === mainWindow.webContents && event.senderFrame === mainWindow.webContents.mainFrame
@@ -38,10 +41,7 @@ function createWindow() {
   mainWindow.webContents.on('will-navigate', (event) => event.preventDefault())
   mainWindow.on('closed', () => { mainWindow = null })
   if (app.isPackaged) {
-    void mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`
-      <html><body style="margin:0;display:grid;place-items:center;height:100vh;background:#f7f5ef;color:#233128;font:20px system-ui">
-        Starting Internship Hub…
-      </body></html>`))
+    void mainWindow.loadFile(path.join(__dirname, 'startup.html'))
   } else {
     void mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   }
@@ -74,6 +74,17 @@ ipcMain.handle('tracker:backup', async (event) => {
   } finally {
     backupInProgress = false
   }
+})
+
+ipcMain.handle('tracker:setup-database', async (event, credentials) => {
+  if (!isAppWindow(event) || !setupMode) throw new Error('Database setup is not active.')
+  if (!credentials || typeof credentials.adminPassword !== 'string' || typeof credentials.existingPassword !== 'string') {
+    throw new Error('Enter the requested database credentials.')
+  }
+  const result = provisionDatabase(credentials)
+  setupMode = false
+  void openPackagedApp()
+  return result
 })
 
 async function openPackagedApp() {
@@ -115,7 +126,12 @@ if (squirrelStartup || !app.requestSingleInstanceLock()) {
   app.on('second-instance', () => { if (mainWindow) { mainWindow.show(); mainWindow.focus() } })
   app.whenReady().then(() => {
     createWindow()
-    if (app.isPackaged) void openPackagedApp()
+    if (app.isPackaged) {
+      if (!fs.existsSync(secretPath(process.env.LOCALAPPDATA))) {
+        setupMode = true
+        void mainWindow.loadFile(path.join(__dirname, 'setup.html'))
+      } else void openPackagedApp()
+    }
     app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
   })
 }
