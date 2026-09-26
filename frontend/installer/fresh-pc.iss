@@ -1,4 +1,4 @@
-#define HubVersion "0.1.11"
+#define HubVersion "0.1.12"
 #define PgInstaller "postgresql-17.11-4-windows-x64.exe"
 
 [Setup]

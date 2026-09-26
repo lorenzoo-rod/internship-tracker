@@ -32,7 +32,7 @@ class OpportunityMigrationTest {
 
             Flyway.configure().dataSource(jdbcUrl, "postgres", "postgres")
                     .locations("classpath:db/migration")
-                    .baselineOnMigrate(true).baselineVersion("1").load().migrate();
+                    .baselineOnMigrate(true).baselineVersion("1").target("2").load().migrate();
 
             try (var connection = DriverManager.getConnection(jdbcUrl);
                  var statement = connection.createStatement();
@@ -45,6 +45,23 @@ class OpportunityMigrationTest {
                 assertEquals("APPLIED", rows.getString("stage"));
                 assertEquals("https://example.com/status", rows.getString("status_url"));
                 assertEquals(null, rows.getString("application_url"));
+            }
+            try (var connection = DriverManager.getConnection(jdbcUrl);
+                 var statement = connection.createStatement()) {
+                statement.execute("""
+                        UPDATE opportunities SET discovery_url = 'https://linkedin.com/jobs' WHERE stage = 'SAVED'
+                        """);
+            }
+
+            Flyway.configure().dataSource(jdbcUrl, "postgres", "postgres")
+                    .locations("classpath:db/migration").load().migrate();
+
+            try (var connection = DriverManager.getConnection(jdbcUrl);
+                 var statement = connection.createStatement()) {
+                statement.execute("""
+                        INSERT INTO opportunities (title, company, discovery_url, application_url, stage)
+                        VALUES ('Another Intern', 'Other Co', 'https://linkedin.com/jobs', 'https://example.com/another', 'SAVED')
+                        """);
             }
         }
     }

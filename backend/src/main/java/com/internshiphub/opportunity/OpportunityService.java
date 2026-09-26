@@ -74,11 +74,13 @@ public class OpportunityService {
     }
 
     private void checkDuplicates(String discoveryUrl, String applicationUrl, Long ownId) {
-        for (String url : new String[] { discoveryUrl, applicationUrl }) {
-            if (url == null) continue;
-            repository.findByTrackedUrl(url).stream()
+        if (applicationUrl != null) {
+            repository.findFirstByApplicationUrl(applicationUrl)
                     .filter(existing -> !existing.getId().equals(ownId))
-                    .findFirst()
+                    .ifPresent(existing -> { throw new DuplicateOpportunityException(existing); });
+        } else if (discoveryUrl != null) {
+            repository.findFirstByDiscoveryUrlAndApplicationUrlIsNull(discoveryUrl)
+                    .filter(existing -> !existing.getId().equals(ownId))
                     .ifPresent(existing -> { throw new DuplicateOpportunityException(existing); });
         }
     }

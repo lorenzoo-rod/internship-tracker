@@ -17,7 +17,7 @@ The first usable version runs locally with a separately configured Spring Boot s
 
 ## Current tracker workflow
 
-- Edit a card's title, company, and posting URL through a prefilled form. The stage remains editable through the board's existing control. A URL already used by another card is rejected with the existing-card warning.
+- Edit a card's title, company, and links through a prefilled form. The stage remains editable through the board's existing control. The current duplicate rule below applies when editing.
 - Gray pencil and trash controls sit at the top right of each card, with accessible labels. Deleting a card removes it permanently after a confirmation that names the card.
 - "Don't ask again on this device" in the deletion confirmation persists across launches. A board control turns confirmations back on. A broader settings window can be designed later.
 - In the desktop app, choose a destination with **Save backup** to create a checked PostgreSQL archive of the current cards. The app reports the saved path or an error and leaves existing backup files untouched.
@@ -26,6 +26,7 @@ The first usable version runs locally with a separately configured Spring Boot s
 - Use **Find** to open MyGreenhouse Jobs in the normal browser as another browse source. It may require sign-in and lists roles from participating employers; a direct Greenhouse-hosted company job link can be pasted back into Find for autofill.
 - Click a Kanban column to focus it and give its cards more room. The other stages become narrow tabs with card counts. Click the focused column again, press Escape, or choose **Show full board** to leave focus mode. Card links, controls, stage menus, and drag-and-drop remain available.
 - Version 0.1.11 adds separate discovery, application, and status links to each card. The pencil form edits all three. Saved cards feature the application link; later stages feature the status link when available. The Chrome **Add to saved** action captures the company page URL and available title/company hints, then opens the review form. Nothing is saved until the user confirms. The extension requires a one-time manual load in Chrome.
+- Version 0.1.12 allows different application pages to share the same discovery link. An exact application link match still blocks saving; discovery-only cards cannot share the same discovery link. The extension adds a discovery link automatically only when the referrer points to an individual LinkedIn job page.
 
 ## Later backup workflows
 

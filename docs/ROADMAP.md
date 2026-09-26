@@ -115,6 +115,10 @@ Version 0.1.11 implements a user-invoked Chrome **Add to saved** action using te
 
 For the 0.1.11 update, the migration was tested against a restored copy of existing data after a fresh checked backup. The installed Chrome handoff, review form, and existing-card preservation have been confirmed; the backend and UI tests cover duplicate behavior.
 
+Version 0.1.12 corrects duplicate handling for roles found through the same general job-board page. A distinct company application URL identifies a distinct card; discovery-only cards still block an exact discovery match. The Chrome extension carries a discovery referrer only for an individual LinkedIn job page. The database migration replaces the old discovery URL unique index with a partial index for discovery-only cards.
+
+The 0.1.12 backend, renderer, and desktop tests passed. A checked backup was created before the current-PC installer update. The installed app started with all 10 saved cards; PostgreSQL reports Flyway version 3, the new partial index, and no old global discovery index. The copied extension files match the package. Reloading the unpacked extension in Chrome and a user-facing save check remain.
+
 ## Later milestones
 
 Version 0.1.11 combines the three-link card migration with Chrome **Add to saved** and is installed on the current PC. A verified backup was restored into an isolated PostgreSQL 17 server; the migration preserved all seven existing links. The installed API reopened with seven cards and no legacy `postingUrl` field, and the app copied the Chrome extension to a stable folder. The user loaded the extension and confirmed that a company application page opens the editable desktop review form, autofills available details, and saves to `SAVED` after confirmation. Chrome Web Store distribution remains later work.
@@ -124,7 +128,7 @@ Version 0.1.11 combines the three-link card migration with Chrome **Add to saved
 - Global shortcut, quick-add overlay, and system tray.
 - Keyboard shortcuts for common board actions, then a Settings screen for viewing and customizing them. Plan defaults, shortcut conflicts, and accessible alternatives before implementation.
 - Broader browser integration and Chrome Web Store distribution.
-- Browser workflow follow-up: investigate a visible Save to Hub action on supported application pages, the repeated browser access/open-app prompt, and an optional batch review inbox so several browser captures can be approved or discarded in one desktop session. Decide site permissions, draft storage, and browser-to-app transport before implementation.
+- Browser workflow follow-up: investigate a visible Save to Hub action on supported application pages and an optional batch review inbox so several browser captures can be approved or discarded in one desktop session. Decide site permissions, draft storage, and browser-to-app transport before implementation. The current extension is opened from Chrome's Extensions menu; the user has not reported a recurring permission prompt.
 - Browse internship postings in or from the app and add a selected posting with available details prefilled for review.
 - Automatic discovery and recommendations.
 - Email-based application updates.

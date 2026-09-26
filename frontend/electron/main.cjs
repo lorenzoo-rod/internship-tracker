@@ -20,7 +20,7 @@ let boardReady = false
 function installChromeExtensionFiles() {
   const destination = path.join(process.env.LOCALAPPDATA, 'InternshipHubData', 'chrome-extension')
   fs.mkdirSync(destination, { recursive: true })
-  for (const name of ['manifest.json', 'popup.html', 'popup.js']) {
+  for (const name of ['manifest.json', 'discovery-link.js', 'popup.html', 'popup.js']) {
     fs.copyFileSync(path.join(__dirname, '..', 'chrome-extension', name), path.join(destination, name))
   }
 }

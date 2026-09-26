@@ -20,4 +20,6 @@ Use **Find** to open LinkedIn Jobs or MyGreenhouse Jobs in the normal browser. M
 
 Version 0.1.11 stores discovery, application, and status links separately. The pencil form shows all links. A Saved card opens its application page; later cards show the status page when one is available. An existing single URL is migrated into application for Saved or status for later stages. Before updating an installed app, create a checked database backup.
 
+Version 0.1.12 allows several cards to share a general discovery page when their application URLs differ. An exact application URL match remains a duplicate; if neither card has an application URL, an exact discovery URL match is a duplicate. The extension automatically captures a discovery referrer only for an individual LinkedIn job page. Reload the unpacked extension in Chrome after updating the desktop app.
+
 The Chrome extension is copied to `%LOCALAPPDATA%\InternshipHubData\chrome-extension` when the packaged app starts. Follow [the extension setup instructions](chrome-extension/README.md) to load it once in Chrome. On a company application page, click the extension and **Review in Internship Hub**. The desktop app opens an editable form and saves only after you confirm. Chrome may ask you to allow opening the desktop app.

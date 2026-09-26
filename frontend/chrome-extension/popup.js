@@ -21,12 +21,8 @@ async function prepare() {
   url.searchParams.set('applicationUrl', tab.url)
   url.searchParams.set('title', details.title.slice(0, 255))
   url.searchParams.set('company', details.company.slice(0, 255))
-  try {
-    const referrer = new URL(details.referrer)
-    if (referrer.protocol === 'https:' && /(^|\.)(linkedin\.com|joinhandshake\.com)$/.test(referrer.hostname)) {
-      url.searchParams.set('discoveryUrl', referrer.href)
-    }
-  } catch { /* No discovery source available. */ }
+  const discoveryUrl = roleDiscoveryUrl(details.referrer)
+  if (discoveryUrl) url.searchParams.set('discoveryUrl', discoveryUrl)
   page.textContent = tab.url
   open.href = url.href
   open.hidden = false

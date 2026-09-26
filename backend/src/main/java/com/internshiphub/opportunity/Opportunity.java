@@ -23,7 +23,7 @@ public class Opportunity {
     @Column(nullable = false)
     private String company;
 
-    @Column(name = "discovery_url", unique = true, length = 2048)
+    @Column(name = "discovery_url", length = 2048)
     private String discoveryUrl;
 
     @Column(name = "application_url", unique = true, length = 2048)

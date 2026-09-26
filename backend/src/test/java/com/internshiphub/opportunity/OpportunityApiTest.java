@@ -161,27 +161,41 @@ class OpportunityApiTest {
     }
 
     @Test
-    void blocksCrossFieldTrackedUrlsButAllowsSharedStatusUrlsWithWarning() throws Exception {
+    void allowsSharedDiscoveryWithDifferentApplicationsButBlocksMatchingApplication() throws Exception {
         Opportunity existing = repository.saveAndFlush(new Opportunity(
                 "First Intern", "Example Co", "https://example.com/discovery", "https://example.com/apply", "https://example.com/status"));
 
         mvc.perform(post("/api/opportunities")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"title":"Duplicate","company":"Other Co","applicationUrl":"https://example.com/discovery"}
-                                """))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.existing.id").value(existing.getId()));
-
-        mvc.perform(post("/api/opportunities")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"title":"Second Intern","company":"Other Co","applicationUrl":"https://example.com/another","statusUrl":"https://example.com/status"}
+                                {"title":"Second Intern","company":"Other Co","discoveryUrl":"https://example.com/discovery","applicationUrl":"https://example.com/another","statusUrl":"https://example.com/status"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.statusUrlMatchId").value(existing.getId()));
 
+        mvc.perform(post("/api/opportunities")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Duplicate","company":"Third Co","applicationUrl":" https://example.com/apply "}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.existing.id").value(existing.getId()));
+
         org.junit.jupiter.api.Assertions.assertEquals(2, repository.count());
+    }
+
+    @Test
+    void blocksAnExactDiscoveryMatchWhenBothCardsHaveNoApplicationUrl() throws Exception {
+        Opportunity existing = repository.saveAndFlush(new Opportunity(
+                "First Intern", "Example Co", "https://example.com/jobs/1", null, null));
+
+        mvc.perform(post("/api/opportunities")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"title":"Duplicate","company":"Example Co","discoveryUrl":" https://example.com/jobs/1 "}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.existing.id").value(existing.getId()));
     }
 
     @Test

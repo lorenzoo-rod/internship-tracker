@@ -214,7 +214,7 @@ function OpportunityFormDialog({
           <input id="applicationUrl" name="applicationUrl" type="url" defaultValue={editing?.applicationUrl ?? initial?.applicationUrl ?? ''} placeholder="https://company.com/careers/internship" maxLength={2048} />
           <label htmlFor="statusUrl">Application status URL</label>
           <input id="statusUrl" name="statusUrl" type="url" defaultValue={editing?.statusUrl ?? initial?.statusUrl ?? ''} placeholder="https://company.com/candidate/dashboard" maxLength={2048} />
-          <p className="field-note">Add at least one link. Matching discovery or application links show the existing card. Status links may be shared.</p>
+          <p className="field-note">Add at least one link. An application link already on another card is a duplicate. Discovery-only cards also cannot share a discovery link. Status links may be shared.</p>
 
           {duplicate && (
             <div className="form-message duplicate-message" role="alert">
