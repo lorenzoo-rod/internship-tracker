@@ -1,24 +1,37 @@
 # Internship Hub
 
-A local desktop Kanban board for tracking internship opportunities and applications. The installed Windows app starts its own Spring Boot API; PostgreSQL remains a separate Windows service. The development setup can also run the API separately.
+A local desktop Kanban board for tracking internship opportunities and applications. The installed Windows app starts its own Spring Boot API; PostgreSQL remains a separate Windows service.
 
-On the current Windows machine, PostgreSQL 17 is installed as the `postgresql-x64-17` service. Its durable data directory is `C:\ProgramData\InternshipHub\PostgreSQL\data`. The `internship_hub` database and user are dedicated to this app. The installed app bundles Java and the API, so opening it does not require Maven or npm.
+**Installation status:** Version 0.1.12 is installed and tested on the development laptop. This repository does not contain a prebuilt installer or a verified public download. A Windows x64 installer can be built from source using the steps below, but its full setup path has not been tested on a clean Windows PC. See [the open verification task](docs/ROADMAP.md#milestone-6--fresh-windows-pc-installer) before relying on it for a new installation.
 
 ## Open the installed app on this PC
 
-Use the **Internship Hub** Start Menu shortcut. PostgreSQL must be running as `postgresql-x64-17`; the app starts and stops its own API. Its database credential is kept in `%LOCALAPPDATA%\InternshipHubData\secrets\db-password.secret`, outside the Squirrel install directory `%LOCALAPPDATA%\InternshipHub`. Updates replace application files without replacing the database or credential.
+Use the **Internship Hub** Start Menu shortcut. On the development laptop, PostgreSQL 17 runs as the `postgresql-x64-17` service and stores data in `C:\ProgramData\InternshipHub\PostgreSQL\data`. The app starts and stops its own API. Its database credential is kept in `%LOCALAPPDATA%\InternshipHubData\secrets\db-password.secret`, outside the Squirrel install directory `%LOCALAPPDATA%\InternshipHub`. Updates replace application files without replacing the database or credential. Opening the installed app does not require Maven or npm.
 
 Version 0.1.12 includes card editing, permanent deletion, a **Save backup** button, first-run database setup, the focused board, Find links for LinkedIn Jobs and MyGreenhouse Jobs, three separate card links, and a Chrome **Add to saved** extension. Multiple roles can share a discovery link when their application links differ. Use the pencil and trash controls on a card. The deletion dialog can remember "Don't ask again on this device"; the board then shows a control to turn confirmations back on. Click **Save backup**, choose a new `.dump` filename, and wait for the saved-path message. The app checks the archive before reporting success and will not overwrite an existing backup. Keep backup files somewhere private because they contain your saved application details.
 
-To enable the browser action, load the extension from `%LOCALAPPDATA%\InternshipHubData\chrome-extension` in `chrome://extensions` using **Developer mode → Load unpacked**. See [Chrome extension setup](frontend/chrome-extension/README.md). Click the extension on a company application page, then review the suggested details in Internship Hub before saving.
+To enable the optional browser action, load the extension from `%LOCALAPPDATA%\InternshipHubData\chrome-extension` in `chrome://extensions` using **Developer mode → Load unpacked**. See [Chrome extension setup](frontend/chrome-extension/README.md). Click the extension on a company application page, then review the suggested details in Internship Hub before saving. Reload the unpacked extension in Chrome after an app update.
 
-To build another installer from the repository, run `npm ci` and `npm run make` in `frontend/`. This packages the React build, Spring Boot JAR, and a pinned Eclipse Temurin 21 runtime. The build requires Maven, a Java 21 or newer JDK, and internet access for the pinned runtime on first use. The installer is at `frontend/out/make/squirrel.windows/x64/InternshipHubSetup.exe`.
+To build another installer for this laptop, run `npm ci` and `npm run make` in `frontend/`. This packages the React build, Spring Boot JAR, and a pinned Eclipse Temurin 21 runtime. The build requires Node.js 22.12 or newer, Maven, a Java 21 or newer JDK, and internet access for the pinned runtime on first use. If the JDK is not at the build script's default `C:\Program Files\Java\jdk-23`, set `DESKTOP_BUILD_JAVA_HOME` to its directory first. The result is `frontend/out/make/squirrel.windows/x64/InternshipHubSetup.exe`. This Squirrel installer uses an already installed PostgreSQL service and an existing app database credential; use the fresh-PC build below when those are absent.
 
-## Fresh Windows PC setup
+## Build and try the fresh Windows PC installer
 
-Build the offline fresh-PC installer with `npm run make:fresh` from `frontend/`. It wraps the desktop installer and a pinned, signature-checked PostgreSQL 17 installer in one executable at `frontend/out/make/fresh-pc/InternshipHubFreshPCSetup.exe`. The build downloads PostgreSQL and Inno Setup on first use, so it needs internet access and about 1 GB of temporary space; the resulting installer works offline. This installer is currently unsigned, so Windows may ask you to review its publisher.
+This path is **experimental until the clean-Windows test is complete**. No prebuilt fresh-PC installer is published in this repository. To build one on a Windows x64 development machine:
 
-Run the fresh-PC installer normally, approve its Windows administrator prompt, and complete the PostgreSQL installer if it appears. Choose and remember the PostgreSQL administrator password. The wrapper keeps an existing PostgreSQL 17 installation and then installs the desktop app for the Windows user who started setup. On first app launch, enter that administrator password to create the dedicated app login and database. If an `internship_hub` database already exists but the app's local password file is absent, also enter its existing app-user password. Setup checks and reuses existing cards; it never resets the database or login password automatically.
+1. Install Git, Node.js 22.12 or newer, Maven, and a Java 21 or newer JDK. Set `JAVA_HOME` to that JDK directory and confirm `mvn -version` reports it. The build also needs internet access and about 1 GB of temporary space to download its pinned Java runtime, PostgreSQL 17 installer, and Inno Setup.
+2. Clone this repository and run the following commands in PowerShell. The build script uses `DESKTOP_BUILD_JAVA_HOME` to locate your JDK.
+
+   ```powershell
+   git clone https://github.com/lorenzoo-rod/internship-tracker.git
+   cd internship-tracker/frontend
+   $env:DESKTOP_BUILD_JAVA_HOME = $env:JAVA_HOME
+   npm ci
+   npm run make:fresh
+   ```
+
+3. Copy `frontend/out/make/fresh-pc/InternshipHubFreshPCSetup.exe` to the target Windows PC. This unsigned installer bundles the desktop app and PostgreSQL setup; Windows may ask you to review its publisher. The resulting file can run offline.
+4. Run the installer, approve its administrator prompt, and complete the PostgreSQL setup wizard if it appears. Choose and remember the PostgreSQL administrator password. The wrapper leaves an existing PostgreSQL 17 installation in place and installs the desktop app for the Windows user who started setup.
+5. Open **Internship Hub** from the Start Menu. On first launch, enter the PostgreSQL administrator password so the app can create its dedicated database and login. If an `internship_hub` database already exists but the app's local password file is absent, provide its existing app-user password too. Setup checks and reuses existing cards; it does not reset the database or login password automatically.
 
 App updates and uninstall leave the PostgreSQL service, database, credential file, and backup archives in place. Removing local data is a separate, explicit manual action. The app currently expects its local PostgreSQL service on loopback port 5432.
 
